@@ -206,9 +206,11 @@ def rebalance(context, data):
     df = pd.DataFrame(data=np.transpose((w.value)), columns=df.index)  # 翻转
     #print df.head(10)
     for c in df.columns:
+        #print c
         #print c.symbol, ("%.2f" % df.at[0,c])
         weight = df.at[0,c] * 100
-        print "stock %s set weight %s" %(c.symbol,weight)
+        weight = ("%.2f" % weight)
+        print "stock %s set weight %s" %(c,weight)
         try:
             #context.xq_user.adjust_weight(c.symbol,weight)
             pass
