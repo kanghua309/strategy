@@ -209,10 +209,10 @@ def rebalance(context, data):
         #print c
         #print c.symbol, ("%.2f" % df.at[0,c])
         weight = df.at[0,c] * 100
-        weight = ("%.2f" % weight)
+        #weight = ("%.2f" % weight)
         print "stock %s set weight %s" %(c,weight)
         try:
-            #context.xq_user.adjust_weight(c.symbol,weight)
+            context.xq_user.adjust_weight(c,weight)
             pass
         except easytrader.webtrader.TradeError,e:
             print e
