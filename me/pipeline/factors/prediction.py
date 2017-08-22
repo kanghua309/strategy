@@ -54,28 +54,29 @@ class RNNPredict(CustomFactor):
     inputs = [];
     window_length = 1
     def compute(self, today, assets, out, *inputs):
-        print today
-        if (today.weekday() == 0): #Monday
-                print "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+        #print "=====",today,today.weekday()
+        if (today.weekday() + 2 == 6): #周天
+                #print "----",today
                 data = today
-                print "today",type(today),today
-                print "asset",type(assets),assets
+                #print "today",type(today),today
+                #print "asset",type(assets),assets
                 #print "out",type(out),out
                 #print "input",type(inputs),inputs
                 conn = sqlite3.connect('History.db', check_same_thread=False)
                 query = "select * from predict where date >= '%s' order by date limit 1 " % data
                 df = pd.read_sql(query, conn)
                 df = df.set_index('date')
-                print df.head(10)
-                print "-----------read from sql---------"
+                #print df.head(10)
+                #print "-----------read from sql---------"
                 new_index = [sid(asset).symbol + "_c1_c0" for asset in assets]
-                print "new_index:",new_index
+                #print "new_index:",new_index
                 df = df.reindex(columns = new_index)
-                print df.head(10)
-                print type(df.columns.values),
-                print df[-1:].values
-                print df.ix[0].values
+                #print df.head(10)
+                #print type(df.columns.values),
+                #print df[-1:].values
+                #print df.ix[0].values
                 out[:] = df.ix[0].values
+                conn.close()
         else:
-                print "+++++++++++++++++++++++++++++++++++++++++++++"
+                #print "+++++++++++++++++++++++++++++++++++++++++++++"
                 out[:] = None

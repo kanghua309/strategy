@@ -158,7 +158,6 @@ for stock in alreadylist:
     _clean(stock,conn)
 
 conn.close()
-
 record()
 end = datetime.datetime.now()
 print "run time:", end - begin
