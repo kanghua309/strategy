@@ -45,6 +45,12 @@ from datetime import timedelta, date, datetime
 import easytrader
 
 profolio_size = 19  ##FIX  IT
+exchange = 'xq'
+user = ''
+account = '18618280998'
+password = 'Threeeyear3#'
+portfolio_code='ZH1135253'
+
 
 def make_pipeline():
     beta = 0.66 * RollingLinearRegressionOfReturns(
@@ -73,7 +79,10 @@ def make_pipeline():
     )
 
 
+#怎么避开没开盘的股票呢？
 def rebalance(context, data):
+
+    print data.can_trade(symbol('600701')),data.can_trade(symbol('000806'))
     # Pipeline data will be a dataframe with boolean columns named 'longs' and
     # 'shorts'.
     #print context.sim_params.end_session, type(context.sim_params.end_session), type(get_datetime())
@@ -99,10 +108,12 @@ def rebalance(context, data):
     xq_new_profolio_dict = xq_profolio.to_dict()
     print "Rebalance - Step1 - check which stock should sell"
     for index, value in xq_profolio.iteritems():
-        print index, value
+        if False == data.can_trade(symbol(index)):
+            continue
+        #print index, value
         keep_price = xq_profolio[index]
         current_price = data.current(symbol(index), 'price')
-        print  index, keep_price, current_price
+        print "Rebalance - index, keep_price, current_price"
         if keep_price / current_price > 1.05:
             print "%s has down to stop limit, sell it" % index
             del xq_new_profolio_dict[index]
@@ -125,6 +136,8 @@ def rebalance(context, data):
     print "Rebalance - free slot count %s" % (profolio_size - slotlen)
 
     for index1, row1 in df.iterrows():  # 获取每行的index、row
+        if False == data.can_trade(symbol(index1)):
+            continue
         if freeslotlen > 0 and not xq_new_profolio_dict.has_key(index1):
             xq_new_profolio_dict[index1] = 0
             freeslotlen -= 1
@@ -134,11 +147,13 @@ def rebalance(context, data):
             continue
 
         for index2, row2 in xqdf.iterrows():
+            if False == data.can_trade(symbol(index2)):
+                continue
             if row1["pred"] < math.log(0.95) and not xq_new_profolio_dict.has_key(
                     index1) and xq_new_profolio_dict.has_key(index2):
                 print "Rebalance - it predict will up", index1, row1["pred"]
                 if abs(row1["pred"] - row2["pred"]) > math.log(0.05):
-                    print "Rebalance - instead my stock %s in profolio by %" % (index2,index1)
+                    print "Rebalance - instead my stock %s in profolio by %s" % (index2,index1)
                     print xq_new_profolio_dict[index2]
                     del xq_new_profolio_dict[index2]
                     xq_new_profolio_dict[index1] = 0
@@ -152,7 +167,8 @@ def rebalance(context, data):
     for stock in xq_pos:
         if stock not in xq_new_profolio_dict:
             print "sell it now ......"
-            sell_xq(stock)
+            context.user.adjust_weight(stock,0)
+
 
     print "Rebalance - Step4 - To do cvx optimse new  profolio weight"
     import cvxpy as cvx
@@ -212,7 +228,7 @@ def rebalance(context, data):
         #weight = ("%.2f" % weight)
         print "stock %s set weight %s" %(c,weight)
         try:
-            context.xq_user.adjust_weight(c,weight)
+            context.user.adjust_weight(c,weight)
             pass
         except easytrader.webtrader.TradeError,e:
             print e
@@ -221,15 +237,17 @@ def rebalance(context, data):
 
 def initialize(context):
 
-    context.xq_user = easytrader.use('xq')
-    context.xq_user.prepare(user='', account='18618280998', password='Threeeyear3#', portfolio_code='ZH1135253')
-
+    context.user = easytrader.use(exchange)
+    context.user.prepare(user=user, account=account, password=password, portfolio_code=portfolio_code)
     attach_pipeline(make_pipeline(), 'my_pipeline')
     schedule_function(rebalance, date_rules.week_end(days_offset=0), half_days=True)  # 周天
 
 
 def handle_data(context, data):
     print ".",
+    print "date - %s , price %s" % (get_datetime(),data.current(symbol('600701'), 'price'))
+    print "date - %s , price %s" % (get_datetime(),data.current(symbol('603030'), 'price'))
+
     pass
 
 
@@ -237,7 +255,7 @@ def before_trading_start(context, data):
     context.pipeline_data = pipeline_output('my_pipeline')
     pass
 
-
+'''
 def sell_xq_all(context):
     #xq_user = easytrader.use('xq')
     #xq_user.prepare(user='', account='18618280998', password='Threeeyear3#', portfolio_code='ZH1135253')
@@ -245,19 +263,19 @@ def sell_xq_all(context):
         print pos
         print pos['stock_code'][2:]
         if (pos['stock_code'][2:] != '000001'):
-            context.xq_user.adjust_weight(pos['stock_code'][2:], 0.0)
+            context.user.adjust_weight(pos['stock_code'][2:], 0.0)
 
 
 def sell_xq(context,stock):
-    context.xq_user.adjust_weight(stock, 0.0)
+    context.user.adjust_weight(stock, 0.0)
 
 
 def sell_batch_xq(context,stocks):
     for stock in stocks:
-        context.xq_user.adjust_weight(stock, 0.0)
-
+        context.user.adjust_weight(stock, 0.0)
+'''
 def get_xq_pos(context):
-    df = pd.DataFrame(context.xq_user.position)
+    df = pd.DataFrame(context.user.position)
     ds = df['stock_code'].map(lambda x: str(x)[2:])
     pos = []
     for _, value in ds.iteritems():
@@ -269,7 +287,7 @@ def get_xq_pos(context):
 
 def get_xq_profolio_keep_cost_price(context):
     # print xq_user.position
-    df = pd.DataFrame(context.xq_user.history)
+    df = pd.DataFrame(context.user.history)
     df = df[df['status'] == 'success']['rebalancing_histories']
     # print "*****************************"
     # print type(df), df
