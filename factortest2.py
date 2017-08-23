@@ -211,21 +211,16 @@ def rebalance(context, data):
     prob = cvx.Problem(objective,
                        constraints)
     prob.solve()
-    # if prob.status == 'optimal':
-    #print prob.status, type(w.value), w.value
+    if prob.status != 'optimal':
+       print "optimal failed ", prob.status
+       raise SystemExit(-1)
+
     print np.squeeze(np.asarray(w.value))  # Remove single-dimensional entries from the shape of an array
 
-    #xq_user = easytrader.use('xq_profolio')
-    #xq_user.prepare(user='', account='18618280998', password='Threeeyear3#', portfolio_code='ZH1135253')
-    # for w in  np.squeeze(np.asarray(w.value)) :
-    #     print w,
     df = pd.DataFrame(data=np.transpose((w.value)), columns=df.index)  # 翻转
     #print df.head(10)
     for c in df.columns:
-        #print c
-        #print c.symbol, ("%.2f" % df.at[0,c])
         weight = df.at[0,c] * 100
-        #weight = ("%.2f" % weight)
         print "stock %s set weight %s" %(c,weight)
         try:
             context.user.adjust_weight(c,weight)
