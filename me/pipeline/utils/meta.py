@@ -10,8 +10,6 @@ Created on Tue May 02 18:35:00 2017
 import tushare as ts
 import pickle 
 
-
-
 def load_tushare_df(df_type):
     file = 'ts.' + df_type + '.dat'
     try:
@@ -25,6 +23,7 @@ def load_tushare_df(df_type):
         elif df_type == "gem":
            obj=ts.get_gem_classified()
         elif df_type == "industry":
+           print ts, pickle
            obj = ts.get_industry_classified()
         elif df_type == "st":
            obj = ts.get_st_classified()

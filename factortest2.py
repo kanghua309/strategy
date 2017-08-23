@@ -31,6 +31,9 @@ from zipline.pipeline.loaders.frame import DataFrameLoader
 from zipline.pipeline.factors import AverageDollarVolume, CustomFactor, Latest, RollingLinearRegressionOfReturns
 
 from me.pipeline.factors.prediction import RNNPredict
+from me.pipeline.classifiers.tushare.sector import getSector
+from me.pipeline.filters.universe import universe_filter,sector_filter
+
 import math
 
 from itertools import chain
@@ -67,12 +70,16 @@ def make_pipeline():
     #short = pred.top(1)
     #longs = pred.bottom(1)
 
+    sector = getSector()
+
+
     return Pipeline(
         columns={
             'pred': pred,
             'rank': rank,
             'beta': beta,
-           # 'longs': longs,
+            'sector': sector,
+            # 'longs': longs,
            # 'short': short
             # 'shorts': test.bottom(2),
         },
@@ -189,17 +196,17 @@ def rebalance(context, data):
     constraints.extend([riskvec * w <= MAX_BETA_EXPOSURE])  # risk
 
     # filters = [i for i in range(len(africa)) if africa[i] == 1]
-    '''
+
     secMap = {}
     idx = 0
     for i, row in pipeline_data.sector.iteritems():
-        print("--", idx, i, row, type(row))
+        print("--------", idx, i, row, type(row))
         if row not in secMap:
             x = []
             secMap[row] = x
         secMap[row].append(idx)
         idx += 1
-    print(secMap)
+    print "secMap:",secMap
 
     for k, v in secMap.iteritems():
         print(v, 1.0 / len(secMap), len(secMap))
@@ -207,9 +214,8 @@ def rebalance(context, data):
 
     # print("risk_factor_exposures.as_matrix().T",pipeline_data.market_beta.fillna(1.0),pipeline_data.market_beta.fillna(1.0).values)
     # constraints.append(pipeline_data.market_beta.fillna(1.0)*w<= MAX_BETA_EXPOSURE)
-    '''
-    prob = cvx.Problem(objective,
-                       constraints)
+
+    prob = cvx.Problem(objective,constraints)
     prob.solve()
     if prob.status != 'optimal':
        print "optimal failed ", prob.status

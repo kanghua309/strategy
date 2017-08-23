@@ -9,7 +9,7 @@ from zipline.api import (
 )
 from zipline.pipeline.factors import CustomFactor
 #from me.pipeline.utils import tushare_loader as tu
-from me.pipeline.utils.tushare import load_tushare_df
+from me.pipeline.utils.meta import load_tushare_df
 
 
 SECTOR_NAMES = {

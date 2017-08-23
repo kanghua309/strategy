@@ -18,7 +18,7 @@ from zipline.pipeline.data import USEquityPricing
 from zipline.pipeline.factors import AverageDollarVolume, CustomFactor
 from zipline.pipeline.filters import CustomFilter
 
-from me.pipeline.utils.tushare import load_tushare_df
+from me.pipeline.utils.meta import load_tushare_df
 from me.pipeline.classifiers.tushare.sector import getSector,getSectorSize,industryClassied
 
 market_cap_limit = 1#yi
