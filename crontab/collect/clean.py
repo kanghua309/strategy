@@ -71,5 +71,3 @@ for stock in alreadylist.name:
     _clean(stock,conn)
 '''
 conn.close()
-
-

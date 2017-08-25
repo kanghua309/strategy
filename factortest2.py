@@ -168,9 +168,6 @@ def rebalance(context, data):
     print "Rebalance - now new profolio"
     print xq_new_profolio_dict
 
-
-
-
     print "Rebalance - Step3 - To do cvx optimse new  profolio weight"
     import cvxpy as cvx
     print "Rebalance - To do cvx optimse in our new profolio(%s) set" % len(xq_new_profolio_dict)

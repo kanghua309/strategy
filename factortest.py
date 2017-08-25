@@ -248,14 +248,20 @@ def rebalance(context, data):
     '''
 
 def initialize(context):
-    attach_pipeline(make_pipeline(), 'my_pipeline')
-    schedule_function(rebalance,date_rules.week_start(days_offset=0),half_days = True) #每周一
+    #attach_pipeline(make_pipeline(), 'my_pipeline')
+    #schedule_function(rebalance,date_rules.week_start(days_offset=0),half_days = True) #每周一
+    pass
 
 def handle_data(context, data):
     pass
 
 def before_trading_start(context, data):
-    context.pipeline_data = pipeline_output('my_pipeline')
+    #context.pipeline_data = pipeline_output('my_pipeline')
+    #print "date - %s , price %s" % (get_datetime(),data.current(symbol('600701'), 'price'))
+    print "date - %s , price %s" % (get_datetime(),data.current(symbol('000001'), 'price'))
+
+
+
     pass
 
 
