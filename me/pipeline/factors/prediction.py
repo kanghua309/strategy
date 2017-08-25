@@ -54,8 +54,8 @@ class RNNPredict(CustomFactor):
     inputs = [];
     window_length = 1
     def compute(self, today, assets, out, *inputs):
-        #print "=====",today,today.weekday()
-        if (today.weekday() + 2 == 6): #周天
+        #print "=====",type(today),today,today.weekday()
+        if (today.weekday() == 4): #每周5计算一次
                 #print "----",today
                 data = today
                 #print "today",type(today),today
@@ -63,7 +63,8 @@ class RNNPredict(CustomFactor):
                 #print "out",type(out),out
                 #print "input",type(inputs),inputs
                 conn = sqlite3.connect('History.db', check_same_thread=False)
-                query = "select * from predict where date >= '%s' order by date limit 1 " % data
+                query = "select * from predict where date >= '%s' order by date limit 1 " % str(data)[:19]
+                #print query
                 df = pd.read_sql(query, conn)
                 df = df.set_index('date')
                 #print df.head(10)
