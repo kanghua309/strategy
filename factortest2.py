@@ -236,6 +236,7 @@ def rebalance(context, data):
             pass
 
 
+
 def initialize(context):
 
     context.user = easytrader.use(exchange)
