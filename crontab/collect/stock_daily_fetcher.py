@@ -28,62 +28,43 @@ def getAllStockSaved():
     return alreadylist
 
 
-
+import datetime
 def _check(stock, conn):
-    print "update ----- :", stock
+    print "check ----- :", stock
     query = "select * from '%s' order by date" % stock
     try:
     	df = pd.read_sql(query, conn)
     	df = df.set_index('date')
+        stocklastsavedday = df.ix[-1].name[:10]
     except:
         print "stock '%s' read failed" % (stock)
-        return False
-    if dt.now().weekday() == 5:  
-    	yesterday = str(pd.Timestamp(dt.now()) - pd.Timedelta(days=1))[:10]
-    elif dt.now().weekday() == 6: #sunday
-        yesterday = str(pd.Timestamp(dt.now()) - pd.Timedelta(days=2))[:10]
-    elif dt.now().weekday() == 0:  
-    	yesterday = str(pd.Timestamp(dt.now()) - pd.Timedelta(days=3))[:10]
-    else:
-        yesterday = str(pd.Timestamp(dt.now()) - pd.Timedelta(days=1))[:10]
-    print "yesterday:",yesterday , "last day:",df.ix[-1].name[:10]
-    if yesterday == df.ix[-1].name[:10]:
-    	return 0
-    elif yesterday > df.ix[-1].name[:10]: #stop exchange
-    	return 1
-    else :
-        return -1
+        stocklastsavedday = '1970-01-01'
 
-def _update(stock, conn):
+    if dt.now().weekday() == 5:  
+    	lasttradeday = str(pd.Timestamp(dt.now()) - pd.Timedelta(days=1))[:10]
+    elif dt.now().weekday() == 6: #sunday
+        lasttradeday = str(pd.Timestamp(dt.now()) - pd.Timedelta(days=2))[:10]
+    else:
+        lasttradeday = str(pd.Timestamp(dt.now()))[:10]
+    print "lasttradeday %s,stocklastsaveday %s" % (lasttradeday,stocklastsavedday)
+    gap = datetime.datetime.strptime(lasttradeday,'%Y-%m-%d') - datetime.datetime.strptime(stocklastsavedday,'%Y-%m-%d') 
+    return gap.days,stocklastsavedday
+
+def _update(stock,begin, conn):
+    print "update ----- :", stock
     try:
-        print "update ----- :", stock
-        query = "select * from '%s' order by date" % stock
-        df = pd.read_sql(query, conn)
-        df = df.set_index('date')
-        print "sql saved:", df.tail(1),df.ix[-1],df.ix[-1].name
-        if dt.now().weekday() == 5:
-            yesterday = str(pd.Timestamp(dt.now()) - pd.Timedelta(days=1))[:10]
-        elif dt.now().weekday() == 6:
-            yesterday = str(pd.Timestamp(dt.now()) - pd.Timedelta(days=2))[:10]
-        #elif dt.now().weekday() == 0:  
-    	#    yesterday = str(pd.Timestamp(dt.now()) - pd.Timedelta(days=10))[:10]
-        else:
-            yesterday = str(pd.Timestamp(dt.now()))[:10]
-        print "today:",today
-        if yesterday != df.ix[-1].name[:10]:
-            df = ts.get_h_data(stock, start=df.ix[-1].name[:10], retry_count=5, pause=1)
-            print "read from tu:",df.head(1)
-            df[['open', 'high', 'close', 'low', 'volume']].to_sql(stock, conn, if_exists='append')
-            import time
-            time.sleep(10)
+        df = ts.get_h_data(stock, start=begin, retry_count=5, pause=1)
+        df[['open', 'high', 'close', 'low', 'volume']].to_sql(stock, conn, if_exists='append')
+        import time
+        time.sleep(10)
     except Exception, arg:
         print "exceptionu:", stock, arg
+        raise SystemExit(-1)
         #errorlist.append(stock)
-
 
 def _clean(stock, conn):
     try:
-        print "clean ------ :", stock
+        #print "clean ------ :", stock
         query = "select * from '%s' order by date" % stock
         _ = pd.read_sql(query, conn)
         cur = conn.cursor()
@@ -119,8 +100,21 @@ import pickle
 begin = datetime.datetime.now()
 today = str(pd.Timestamp(dt.now()))[:10]
 conn = sqlite3.connect('History.db', check_same_thread=False)
-df  = ts.get_today_all()
-#df = pickle.load(open('mytest',"rb"))
+'''
+retry = 0
+while True:
+   try:
+       df = ts.get_today_all()
+       #pickle.dump(df,open(filename,"wb",0))
+       break
+   except:
+       retry += 1
+       if retry == 10:
+           conn.close()
+           raise SystemExit(-1)
+       time.sleep(60)
+'''
+df = pickle.load(open('dbak/24-08-2017',"rb"))
 ind = 0
 for index,row in df.iterrows():  
     df = pd.DataFrame(row).T
@@ -130,9 +124,10 @@ for index,row in df.iterrows():
     print df.index
     stock = df.at[today,'code']
     print stock
-    flag = _check(stock,conn)
-    if flag == 0:
- 	print ("%s stock %s check pass ,load today data" % (stock,today)) 
+    gapday,stocklastsavedday = _check(stock,conn)
+        
+    if  gapday == 1 : 
+ 	print ("to load today data" ,stock,today) 
         if df.at[today,'trade'] == 0:
            ind +=1 
  	   print ("%s stock %s stop exchange" % (stock,today)) 
@@ -144,9 +139,10 @@ for index,row in df.iterrows():
                   inplace=True,
                   )
    	df[['open', 'high', 'close', 'low', 'volume']].to_sql(stock, conn, if_exists='append')
-    elif flag < 0 :
+    elif gapday > 1 :
         print ("stock %s miss data" % stock) 
-        _update(stock,conn)
+        if gapday < 10:        
+            _update(stock,stocklastsavedday,conn)
     else:
         print ("%s today has load yet" % stock)
     ind +=1
@@ -154,10 +150,11 @@ for index,row in df.iterrows():
 
 errorlist = []
 alreadylist = getAllStockSaved()
-for stock in alreadylist:
+for stock in alreadylist.name:
     _clean(stock,conn)
 
 conn.close()
+
 record()
 end = datetime.datetime.now()
 print "run time:", end - begin
