@@ -259,9 +259,6 @@ def before_trading_start(context, data):
     #context.pipeline_data = pipeline_output('my_pipeline')
     #print "date - %s , price %s" % (get_datetime(),data.current(symbol('600701'), 'price'))
     print "date - %s , price %s" % (get_datetime(),data.current(symbol('000001'), 'price'))
-
-
-
     pass
 
 
