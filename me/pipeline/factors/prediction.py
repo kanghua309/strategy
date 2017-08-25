@@ -63,7 +63,7 @@ class RNNPredict(CustomFactor):
                 #print "out",type(out),out
                 #print "input",type(inputs),inputs
                 conn = sqlite3.connect('History.db', check_same_thread=False)
-                query = "select * from predict where date >= '%s' order by date limit 1 " % str(data)[:19]
+                query = "select * from predict where date >= '%s' order by date asc limit 1 " % str(data)[:19]
                 #print query
                 df = pd.read_sql(query, conn)
                 df = df.set_index('date')
