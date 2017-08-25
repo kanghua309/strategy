@@ -79,5 +79,4 @@ class RNNPredict(CustomFactor):
                 out[:] = df.ix[0].values
                 conn.close()
         else:
-                #print "+++++++++++++++++++++++++++++++++++++++++++++"
                 out[:] = None
