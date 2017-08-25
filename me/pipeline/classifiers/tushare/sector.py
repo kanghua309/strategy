@@ -71,6 +71,8 @@ def industryClassied():
     g_inds={}
     no = 101
     for k1, group in load_tushare_df("industry").groupby('c_name'):
+        #print k1
+        #print group
         g_inds[k1] = no
         no = no +1
     return g_inds;
@@ -78,8 +80,9 @@ def industryClassied():
 
 def getSector(ind_dict=None):
     if ind_dict is None:
-       ind_dict = industryClassied() 
-    print("++enter getSector++")
+       ind_dict = industryClassied()
+
+    print("++enter getSector++",len(ind_dict))
     tmp=load_tushare_df("industry")
     class Sector(CustomFactor):  
         inputs = [];  
@@ -90,9 +93,11 @@ def getSector(ind_dict=None):
                 stock = sid(msid).symbol
                 try:
                     ind=tmp[tmp['code']==stock]['c_name'].values[0]
+                    #print ind
                     ino=ind_dict[ind]
                     sector_list.append(ino)
                 except:
+                    #print "not find"
                     sector_list.append(0)
                 else:
                     pass

@@ -70,7 +70,7 @@ def make_pipeline():
     #short = pred.top(1)
     #longs = pred.bottom(1)
 
-    sector = getSector()
+    #sector = getSector()
 
 
     return Pipeline(
@@ -78,7 +78,7 @@ def make_pipeline():
             'pred': pred,
             'rank': rank,
             'beta': beta,
-            'sector': sector,
+            #'sector': sector,
             # 'longs': longs,
            # 'short': short
             # 'shorts': test.bottom(2),
@@ -89,7 +89,7 @@ def make_pipeline():
 #怎么避开没开盘的股票呢？
 def rebalance(context, data):
 
-    print data.can_trade(symbol('600701')),data.can_trade(symbol('000806'))
+    #print data.can_trade(symbol('600701')),data.can_trade(symbol('000806'))
     # Pipeline data will be a dataframe with boolean columns named 'longs' and
     # 'shorts'.
     #print context.sim_params.end_session, type(context.sim_params.end_session), type(get_datetime())
@@ -149,10 +149,9 @@ def rebalance(context, data):
             xq_new_profolio_dict[index1] = 0
             freeslotlen -= 1
             continue  # 先用最高预测吧slot空填了
-        # 在检查还有没有可替换的东东
         if index1 == '000001':
             continue
-
+        # 在检查还有没有可替换的东东
         for index2, row2 in xqdf.iterrows():
             if False == data.can_trade(symbol(index2)):
                 continue
@@ -169,49 +168,39 @@ def rebalance(context, data):
     print "Rebalance - now new profolio"
     print xq_new_profolio_dict
 
-    print "Rebalance - Step3 - sell out stock now"
-    xq_pos = get_xq_pos(context)
-    for stock in xq_pos:
-        if stock not in xq_new_profolio_dict:
-            print "sell it now ......"
-            context.user.adjust_weight(stock,0)
-
-
-    print "Rebalance - Step4 - To do cvx optimse new  profolio weight"
+    print "Rebalance - Step3 - To do cvx optimse new  profolio weight"
     import cvxpy as cvx
-    #print pipeline_data.pred.as_matrix()
-    #print len(pipeline_data.index)
-
     print "Rebalance - To do cvx optimse in our new profolio(%s) set" % len(xq_new_profolio_dict)
     #print xq_new_profolio_dict
     df = df.ix[xq_new_profolio_dict]
+    print df.head(10)
     w = cvx.Variable(len(df.index))
-    objective = cvx.Maximize(df.pred.as_matrix() * w)  # mini?
+    objective = cvx.Maximize(df.pred.as_matrix() * w)  # mini????
 
     constraints = [cvx.sum_entries(w) == 1, w > 0]  # dollar-neutral long/short
     # constraints.append(cvx.sum_entries(cvx.abs(w)) <= 1)  # leverage constraint
-    constraints.extend([w > 0.01, w <= 0.3])  # long exposure
+    constraints.extend([w > 0.05, w <= 0.2])  # long exposure
     riskvec = df.beta.fillna(1.0).as_matrix()
     MAX_BETA_EXPOSURE = 0.20
     constraints.extend([riskvec * w <= MAX_BETA_EXPOSURE])  # risk
 
     # filters = [i for i in range(len(africa)) if africa[i] == 1]
-
+    '''  #版块对冲当前，因为股票组合小，不合适
     secMap = {}
     idx = 0
-    for i, row in pipeline_data.sector.iteritems():
-        print("--------", idx, i, row, type(row))
-        if row not in secMap:
-            x = []
-            secMap[row] = x
-        secMap[row].append(idx)
+    #print pipeline_data.sector
+    for equite,classid in df.sector.iteritems():
+        #print("--------###", equite.symbol, classid)
+        if classid not in secMap:
+            _ = []
+            secMap[classid] = _
+        secMap[classid].append(idx)
         idx += 1
-    print "secMap:",secMap
-
     for k, v in secMap.iteritems():
-        print(v, 1.0 / len(secMap), len(secMap))
-        constraints.append(cvx.sum_entries(w[v]) == 1 / len(secMap))
-
+        print(len(secMap))
+        print(w[v])
+        constraints.append(cvx.sum_entries(w[v]) == 1/len(secMap))
+    '''
     # print("risk_factor_exposures.as_matrix().T",pipeline_data.market_beta.fillna(1.0),pipeline_data.market_beta.fillna(1.0).values)
     # constraints.append(pipeline_data.market_beta.fillna(1.0)*w<= MAX_BETA_EXPOSURE)
 
@@ -223,8 +212,20 @@ def rebalance(context, data):
 
     print np.squeeze(np.asarray(w.value))  # Remove single-dimensional entries from the shape of an array
 
+    print "Rebalance - Step4 - do real trading "
+    print "Rebalance - sell some first"
+    xq_pos = get_xq_pos(context)
+    for stock in xq_pos:
+        if stock not in xq_new_profolio_dict:
+            print "sell it now ......"
+            try:
+                 context.user.adjust_weight(stock,0)
+            except easytrader.webtrader.TradeError, e:
+                print "Trader exception %s", e
+                raise SystemExit(-1)
+
+    print "Rebalance - adjust some then"
     df = pd.DataFrame(data=np.transpose((w.value)), columns=df.index)  # 翻转
-    #print df.head(10)
     for c in df.columns:
         weight = df.at[0,c] * 100
         print "stock %s set weight %s" %(c,weight)
@@ -232,13 +233,12 @@ def rebalance(context, data):
             context.user.adjust_weight(c,weight)
             pass
         except easytrader.webtrader.TradeError,e:
-            print e
-            pass
+            print "Trader exception %s" % e
+            raise SystemExit(-1)
 
 
 
 def initialize(context):
-
     context.user = easytrader.use(exchange)
     context.user.prepare(user=user, account=account, password=password, portfolio_code=portfolio_code)
     attach_pipeline(make_pipeline(), 'my_pipeline')
@@ -247,9 +247,8 @@ def initialize(context):
 
 def handle_data(context, data):
     print ".",
-    print "date - %s , price %s" % (get_datetime(),data.current(symbol('600701'), 'price'))
-    print "date - %s , price %s" % (get_datetime(),data.current(symbol('603030'), 'price'))
-
+    #print "date - %s , price %s" % (get_datetime(),data.current(symbol('600701'), 'price'))
+    #print "date - %s , price %s" % (get_datetime(),data.current(symbol('603030'), 'price'))
     pass
 
 

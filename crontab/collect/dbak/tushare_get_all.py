@@ -32,6 +32,7 @@ while True:
        retry += 1
        if retry == 10:
           break
+       time.sleep(60)
       
      
 
