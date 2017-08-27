@@ -52,21 +52,28 @@ exchange = 'xq'
 user = ''
 account = '18618280998'
 password = 'Threeeyear3#'
-portfolio_code='ZH1135253'
+portfolio_code='ZH1140387'
+#portfolio_code='ZH135253'
 
 
 def make_pipeline():
+
+    pred = RNNPredict()
+    rank = pred.rank()
+
+    longs = rank.bottom(100)
+    short = rank.top(100)
+    long_short_screen = long_short_screen = (longs | short)
+
     beta = 0.66 * RollingLinearRegressionOfReturns(
         target=symbol('000001'),  # sid(8554),
         returns_length=5,
-        regression_length=25,
-        # mask=long_short_screen
+        regression_length=50,
+        #mask=long_short_screen
     ).beta + 0.33 * 1.0
 
-    pred = RNNPredict()
     # Build Filters representing the top and bottom 150 stocks by our combined ranking system.
     # We'll use these as our tradeable universe each day.
-    rank = pred.rank()
     #short = pred.top(1)
     #longs = pred.bottom(1)
 
@@ -105,7 +112,7 @@ def rebalance(context, data):
     df = pipeline_data.sort_values(axis=0, by='pred', ascending=False)
     df.index = [index.symbol for index in df.index]
     print "Rebalance - Pipeline factor"
-    print (df.head(10))
+    print (df.head(10),df.tail(10))
     xq_profolio = get_xq_profolio_keep_cost_price(context)
     print "Rebalance - Current xq profolio"
     print xq_profolio
@@ -114,7 +121,7 @@ def rebalance(context, data):
     #print "value:", math.log(0.95), math.log(1.05)
     xq_new_profolio_dict = xq_profolio.to_dict()
     print "Rebalance - Step1 - check which stock should sell"
-    for index, value in xq_profolio.iteritems():
+    for index, value in xq_profolio.iteritems(): 
         if False == data.can_trade(symbol(index)):
             continue
         #print index, value
@@ -145,6 +152,8 @@ def rebalance(context, data):
     for index1, row1 in df.iterrows():  # 获取每行的index、row
         if False == data.can_trade(symbol(index1)):
             continue
+        if np.isnan(row1['beta']):
+            continue 
         if freeslotlen > 0 and not xq_new_profolio_dict.has_key(index1):
             xq_new_profolio_dict[index1] = 0
             freeslotlen -= 1
@@ -154,6 +163,10 @@ def rebalance(context, data):
         # 在检查还有没有可替换的东东
         for index2, row2 in xqdf.iterrows():
             if False == data.can_trade(symbol(index2)):
+                continue
+            #print "debug %s,%s" % (row1['beta'],row2['beta'])
+            if np.isnan(row2['beta']):
+                #print "index2 %s" % index2
                 continue
             if row1["pred"] < math.log(0.95) and not xq_new_profolio_dict.has_key(
                     index1) and xq_new_profolio_dict.has_key(index2):
@@ -173,15 +186,16 @@ def rebalance(context, data):
     print "Rebalance - To do cvx optimse in our new profolio(%s) set" % len(xq_new_profolio_dict)
     #print xq_new_profolio_dict
     df = df.ix[xq_new_profolio_dict]
-    print df.head(10)
+    print df.head(20)
     w = cvx.Variable(len(df.index))
-    objective = cvx.Maximize(df.pred.as_matrix() * w)  # mini????
+    #objective = cvx.Maximize(df.pred.as_matrix() * w)  # mini????
+    objective = cvx.Minimize(df.pred.as_matrix() * w)  # mini????
 
     constraints = [cvx.sum_entries(w) == 1, w > 0]  # dollar-neutral long/short
     # constraints.append(cvx.sum_entries(cvx.abs(w)) <= 1)  # leverage constraint
-    constraints.extend([w > 0.05, w <= 0.2])  # long exposure
+    constraints.extend([w > 0.05, w <= 0.25])  # long exposure
     riskvec = df.beta.fillna(1.0).as_matrix()
-    MAX_BETA_EXPOSURE = 0.20
+    MAX_BETA_EXPOSURE = 0.30
     constraints.extend([riskvec * w <= MAX_BETA_EXPOSURE])  # risk
 
     # filters = [i for i in range(len(africa)) if africa[i] == 1]
@@ -231,11 +245,10 @@ def rebalance(context, data):
         print "stock %s set weight %s" %(c,weight)
         try:
             context.user.adjust_weight(c,weight)
-            pass
-        except easytrader.webtrader.TradeError,e:
+        except easytrader.webtrader.TradeError as e:
+        #except Exception,e:
             print "Trader exception %s" % e
-            raise SystemExit(-1)
-
+            #raise SystemExit(-1)
 
 
 def initialize(context):
@@ -290,16 +303,18 @@ def get_xq_profolio_keep_cost_price(context):
     # print xq_user.position
     df = pd.DataFrame(context.user.history)
     df = df[df['status'] == 'success']['rebalancing_histories']
-    # print "*****************************"
-    # print type(df), df
+    #print "*****************************"
+    #print type(df), df
     _list = []
     for i in df.values:
         _list.append(pd.DataFrame(i))
+    if len(_list) == 0:
+       return pd.Series()
     histdf = pd.concat(_list)
     histdf = histdf.fillna(0)
     # print histdf.iloc[::-1]
     # print "-------------------"
-    print histdf.shape
+    #print histdf.shape
     tmpdict = {}
     ind = 0
     for _, row in histdf.iloc[::-1].iterrows():  # 获取每行的index、row
@@ -316,5 +331,7 @@ def get_xq_profolio_keep_cost_price(context):
             keep_price = row['prev_price']
         net = row['volume'] - row['prev_volume']
         tmpdict[stock] = (net * row['price'] + row['prev_volume'] * keep_price) / row['volume']
-    del tmpdict['000001']  # fix it
+        
+    if tmpdict.has_key('000001'): 
+    	del tmpdict['000001']  # fix it
     return pd.Series(tmpdict)
