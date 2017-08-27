@@ -23,8 +23,8 @@ def load_tushare_df(df_type):
         elif df_type == "gem":
            obj=ts.get_gem_classified()
         elif df_type == "industry":
-           print ts, pickle
-           obj = ts.get_industry_classified()
+           #print ts, pickle
+           obj = ts.get_industry_classified() #该函数不全,只有2800多个,实际股票有3326,所以换个方法取 get_stock_basics
         elif df_type == "st":
            obj = ts.get_st_classified()
         else:

@@ -68,14 +68,14 @@ def getSectorSize():
     return len(SECTOR_NAMES)
 
 def industryClassied():
-    g_inds={}
+    stock2industry={}
     no = 101
     for k1, group in load_tushare_df("industry").groupby('c_name'):
         #print k1
         #print group
-        g_inds[k1] = no
+        stock2industry[k1] = no
         no = no +1
-    return g_inds;
+    return stock2industry;
  
 
 def getSector(ind_dict=None):
