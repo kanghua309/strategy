@@ -40,6 +40,18 @@ def _modify(stock,conn):
         print "exceptionc:", stock, arg
         raise SystemExit(-1)
 
+def _modify2(stock,conn):
+     try:
+        print "check and modify  ------ :", stock
+        query = "update '%s' set date ='2017-08-28 00:00:00'  where date == '2017-08-29 00:00:00'" % (stock)
+        #print query
+        cur = conn.cursor()
+        cur.execute(query)
+        conn.commit()
+     except Exception, arg:
+        print "exceptionc:", stock, arg
+        raise SystemExit(-1)
+
 
 
 
@@ -58,11 +70,29 @@ def _clean(stock, conn):
         raise SystemExit(-1)
 
 
+def  xxx(stock,conn):
+     try:
+        print   "do check and modify  ------ :", stock
+        query = "delete from '%s' where date='2017-08-25' and volume = 1518212" % (stock)
+        #print query
+        cur = conn.cursor()
+        cur.execute(query)
+        conn.commit()
+     except Exception, arg:
+        print "exceptionc:", stock, arg
+        raise SystemExit(-1)
+
+
 
 conn = sqlite3.connect('History.db', check_same_thread=False)
 alreadylist = getAllStockSaved()
-_modify('000421',conn)
-_clean('000421',conn)
+_modify('601326',conn)
+_clean('601326',conn)
+
+#xxx('603987',conn)
+#_clean('603987',conn)
+#_clean('603979',conn)
+
 '''
 for stock in alreadylist.name:
     _modify(stock,conn)
@@ -70,4 +100,5 @@ for stock in alreadylist.name:
     #_modify('600363',conn)
     _clean(stock,conn)
 '''
+
 conn.close()
