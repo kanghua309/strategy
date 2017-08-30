@@ -71,7 +71,7 @@ def get_sector_size():
 def get_sector_class():
     industryClass={}
     no = 101
-    for industry,_ in load_tushare_df("basic").groupby('industry'):
+    for industry,_ in load_tushare_df("industry").groupby('c_name'):
         #print k1
         #print group
         industryClass[industry] = no

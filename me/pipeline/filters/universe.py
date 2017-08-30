@@ -69,7 +69,7 @@ def IsInSymbolsList(sec_list):
     return IsInSecListFactor()  
 '''
 
-def universe_filter(mask,smoothing_func = None):
+def universe_filter(smoothing_func = None):
     """
     Create a Pipeline producing Filters implementing common acceptance criteria.
     
@@ -106,12 +106,9 @@ def universe_filter(mask,smoothing_func = None):
     #liquid = ADV_adj().downsample('month_start') > 2500000
     #market_cap_filter = MarketCap().downsample('month_start') > market_cap_limit
     #universe_filter = (mySymbolsListfiter & market_cap_filter & liquid & high_volume )
-    #universe_filter = ( market_cap_filter & liquid )
+    #universe_filter = ( maket_cap_filter & liquid )
 
-    universe_filter = filters & mask
-
-
-
+    universe_filter = filters
     return universe_filter
 
 def sector_filter(tradeable_count,sector_exposure_limit,smoothing_func = None):
@@ -129,7 +126,7 @@ def sector_filter(tradeable_count,sector_exposure_limit,smoothing_func = None):
     zipline.Filter
         Filter to control sector exposure
     """
-    
+
     industry_class = get_sector_class()
     #print("g_inds",g_inds)
     sector_factor = get_sector(industry_class)
@@ -141,19 +138,24 @@ def sector_filter(tradeable_count,sector_exposure_limit,smoothing_func = None):
     else:
         threshold = int(math.ceil(sector_exposure_limit * tradeable_count))
 
+
     filters = None
     for industry,ino in industry_class.iteritems():
+        print industry,ino
         mask=sector_factor.eq(industry_class[industry])
         if smoothing_func != None:
-            value = smoothing_func(AverageDollarVolume(window_length=21)).top(threshold,mask)
+           value = smoothing_func(AverageDollarVolume(window_length=21)).top(threshold,mask)
         else:
-            value = AverageDollarVolume(window_length=21).top(threshold, mask)
+           value = AverageDollarVolume(window_length=21).top(threshold, mask)
+        print value
+        #print filters
         if filters == None:
            filters = value
         else:
-           filters = (filters & value)
+           filters = (filters | value)
 
     '''
+
     transport_trim = AverageDollarVolume(window_length=21).top(threshold, mask=sector_factor.eq(industry_class['交通运输'.decode("UTF-8")]))             #
     instrument_trim = AverageDollarVolume(window_length=21).top(threshold, mask=sector_factor.eq(industry_class['仪器仪表'.decode("UTF-8")]))
     media_entertainment_trim = AverageDollarVolume(window_length=21).top(threshold, mask=sector_factor.eq(industry_class['传媒娱乐'.decode("UTF-8")]))   #
@@ -202,8 +204,11 @@ def sector_filter(tradeable_count,sector_exposure_limit,smoothing_func = None):
     steel_trim = AverageDollarVolume(window_length=21).top(threshold, mask=sector_factor.eq(industry_class['钢铁行业'.decode("UTF-8")]))                     #      
     ceramics_trim = AverageDollarVolume(window_length=21).top(threshold, mask=sector_factor.eq(industry_class['陶瓷行业'.decode("UTF-8")]))           
     aircraft_manufacturing_trim = AverageDollarVolume(window_length=21).top(threshold, mask=sector_factor.eq(industry_class['飞机制造'.decode("UTF-8")]))
-    food_industry_trim = AverageDollarVolume(window_length=21).top(threshold, mask=sector_factor.eq(industry_class['食品行业'.decode("UTF-8")]))             #
-    
+    food_industry_trim = AverageDollarVolume(window_length=21).downsample('month_start').top(threshold, mask=sector_factor.eq(industry_class['食品行业'.decode("UTF-8")]))             #
+
+    print "---------------------------------"
+    print food_industry_trim
+    print "---------------------------------"
     
     return transport_trim|media_entertainment_trim|\
            chemical_trim|medical_device_trim|\
@@ -227,6 +232,6 @@ def make_china_equity_universe(
         smoothing_func):
     ufilters = universe_filter(smoothing_func)
     sfilters = sector_filter(target_size,max_group_weight,smoothing_func)
-    return ufilters|sfilters|mask
+    return ufilters|sfilters|mask # &? TODO
 
 
