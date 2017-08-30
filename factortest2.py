@@ -31,7 +31,7 @@ from zipline.pipeline.loaders.frame import DataFrameLoader
 from zipline.pipeline.factors import AverageDollarVolume, CustomFactor, Latest, RollingLinearRegressionOfReturns
 
 from me.pipeline.factors.prediction import RNNPredict
-from me.pipeline.classifiers.tushare.sector import getSector
+from me.pipeline.classifiers.tushare.sector import get_sector
 from me.pipeline.filters.universe import universe_filter,sector_filter
 
 import math

@@ -33,15 +33,15 @@ def _check(stock, conn):
     print "check ----- :", stock
     query = "select * from '%s' order by date" % stock
     try:
-    	df = pd.read_sql(query, conn)
-    	df = df.set_index('date')
+        df = pd.read_sql(query, conn)
+        df = df.set_index('date')
         stocklastsavedday = df.ix[-1].name[:10]
     except:
         print "stock '%s' read failed" % (stock)
         stocklastsavedday = '1970-01-01'
 
     if dt.now().weekday() == 5:  
-    	lasttradeday = str(pd.Timestamp(dt.now()) - pd.Timedelta(days=1))[:10]
+        lasttradeday = str(pd.Timestamp(dt.now()) - pd.Timedelta(days=1))[:10]
     elif dt.now().weekday() == 6: #sunday
         lasttradeday = str(pd.Timestamp(dt.now()) - pd.Timedelta(days=2))[:10]
     else:
@@ -85,8 +85,8 @@ def record():
     f.truncate()
     for code in list(set(alreadylist.name)):
         print code
-        if code != 'predict:'
-           print >> f, code
+        if code != 'predict':
+            print >> f, code
     f.close()
 
     print "=======================error====================="
@@ -115,8 +115,8 @@ while True:
    except:
        retry += 1
        if retry == 10:
-       	   conn.close()
-           raise SystemExit(-1)
+            conn.close()
+            raise SystemExit(-1)
        time.sleep(60)
 '''
 df = pickle.load(open('dbak/28-08-2017',"rb"))
@@ -133,10 +133,10 @@ for index,row in df.iterrows():
     #gapday = 1
     print "today:",today, " gapday:",gapday," stocklastsavedday:",stocklastsavedday
     if  gapday == 1 : 
- 	print ("to load today data" ,stock,today) 
+        print ("to load today data" ,stock,today)
         if df.at[today,'trade'] == 0:
-           ind +=1 
- 	   print ("%s stock %s stop exchange" % (stock,today)) 
+           ind +=1
+           print ("%s stock %s stop exchange" % (stock,today))
            continue;
         df.rename(
                   columns={
@@ -144,7 +144,7 @@ for index,row in df.iterrows():
                   },
                   inplace=True,
                   )
-   	df[['open', 'high', 'close', 'low', 'volume']].to_sql(stock, conn, if_exists='append')
+        df[['open', 'high', 'close', 'low', 'volume']].to_sql(stock, conn, if_exists='append')
     elif gapday > 1 :
         print ("stock %s miss data" % stock) 
         if gapday < 10:        

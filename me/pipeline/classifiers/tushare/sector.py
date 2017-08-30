@@ -11,7 +11,7 @@ from zipline.pipeline.factors import CustomFactor
 #from me.pipeline.utils import tushare_loader as tu
 from me.pipeline.utils.meta import load_tushare_df
 
-
+'''
 SECTOR_NAMES = {
 101:'Transport',
 102:'Instrument',
@@ -63,27 +63,28 @@ SECTOR_NAMES = {
 148:'Aircraft Manufacturing',
 149:'Food Industry'
 }
+'''
 
-def getSectorSize():
-    return len(SECTOR_NAMES)
+def get_sector_size():
+    return len(get_sector_class())
 
-def industryClassied():
-    stock2industry={}
+def get_sector_class():
+    industryClass={}
     no = 101
-    for k1, group in load_tushare_df("industry").groupby('c_name'):
+    for industry,_ in load_tushare_df("basic").groupby('industry'):
         #print k1
         #print group
-        stock2industry[k1] = no
+        industryClass[industry] = no
         no = no +1
-    return stock2industry;
+    return industryClass
  
 
-def getSector(ind_dict=None):
-    if ind_dict is None:
-       ind_dict = industryClassied()
+def get_sector(sector_dict=None):
+    if sector_dict is None:
+        sector_dict = get_sector_class()
 
-    print("++enter getSector++",len(ind_dict))
-    tmp=load_tushare_df("industry")
+    print("++enter getSector++",len(sector_dict))
+    basic=load_tushare_df("basic")
     class Sector(CustomFactor):  
         inputs = [];  
         window_length = 1
@@ -92,10 +93,10 @@ def getSector(ind_dict=None):
             for msid in assets:
                 stock = sid(msid).symbol
                 try:
-                    ind=tmp[tmp['code']==stock]['c_name'].values[0]
+                    industry=basic[basic['code'] == stock]['industry'].values[0]
                     #print ind
-                    ino=ind_dict[ind]
-                    sector_list.append(ino)
+                    sector_no=sector_dict[industry]
+                    sector_list.append(sector_no)
                 except:
                     #print "not find"
                     sector_list.append(0)

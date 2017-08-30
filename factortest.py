@@ -7,8 +7,10 @@ Created on Sat Apr 15 10:52:27 2017
 """
 
 from zipline import TradingAlgorithm
-from me.pipeline.classifiers.tushare.sector import getSector
-from me.pipeline.filters.universe import universe_filter,sector_filter,sector_filter2
+
+from me.pipeline.filters.universe import make_china_equity_universe
+from me.pipeline.factors.tsfactor import default_china_equity_universe_mask
+
 
 
 from zipline.api import (
@@ -46,28 +48,32 @@ import pandas as pd
 from datetime import timedelta, date, datetime
 import easytrader
 
-import warnings
-warnings.filterwarnings("ignore", message="numpy.dtype size changed")
-warnings.filterwarnings("ignore", message="numpy.broadcast size changed")
 
 profolio_size = 10
 
 def make_pipeline():
 
-    universe = sector_filter(100, 0.1)
-    universe2 = sector_filter2(100, 0.1)
+    #universe = sector_filter(100, 0.1).downsample('month_start')
+    universe = make_china_equity_universe(
+        target_size = 1000,
+        mask = default_china_equity_universe_mask(),
+        max_group_weight= 0.3,
+        smoothing_func = lambda f: f.downsample('month_start')
+    )
+
+    #universe2 = sector_filter2(100, 0.1)
     print "-----------------------"
-
-
 
     beta = 0.66 * RollingLinearRegressionOfReturns(
         target=symbol('000001'),  # sid(8554),
         returns_length=4,
         regression_length=8,
         #mask=long_short_screen
-        mask = (universe|universe2),
+        mask = (universe),
     ).beta + 0.33 * 1.0
 
+
+    #liquid = ADV_adj()
     #pred = RNNPredict()
 
 
@@ -82,15 +88,18 @@ def make_pipeline():
 
     return Pipeline(
         columns={
-            'beta':   beta,
+            'beta': beta.downsample('month_start'),
+            #'adv' : liquid.downsample('month_start'),
             #'sector': sector,
              #'shorts': test.bottom(2),
         },
+        screen=universe,
     )
 
 
 def rebalance(context, data):
-    print context.pipeline_data.tail(100)
+
+    print "rebalance ----",context.pipeline_data.tail(5)
     pass
 
 def initialize(context):
@@ -99,9 +108,10 @@ def initialize(context):
     pass
 
 def handle_data(context, data):
+    print "handle_data %s" % (get_datetime())
     pass
 
 def before_trading_start(context, data):
     context.pipeline_data = pipeline_output('my_pipeline')
-    #print "date - %s , price %s" % (get_datetime(),data.current(symbol('000001'), 'price'))
+    print "before_trading_start date - %s , price %s" % (get_datetime(),data.current(symbol('000001'), 'price'))
     pass

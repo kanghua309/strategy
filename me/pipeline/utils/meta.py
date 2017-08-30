@@ -31,6 +31,6 @@ def load_tushare_df(df_type):
             raise Exception("Error TSshare Type!!!")
         pickle.dump(obj,open(file,"wb",0))
     else:
-        print("----read from file",df_type)
+        print("***Read from file %s" % df_type)
         pass
     return obj

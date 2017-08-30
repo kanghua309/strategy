@@ -10,6 +10,8 @@ import pandas as pd
 from zipline.pipeline.data import USEquityPricing
 from zipline.pipeline.factors import CustomFactor
 
+
+
 class HurstExp(CustomFactor):  
     inputs = [USEquityPricing.close]  
     window_length = int(252*0.5)  
@@ -29,6 +31,7 @@ class HurstExp(CustomFactor):
            
 
 class Beta(CustomFactor):
+    print "--------------beta---------------"
     inputs = [USEquityPricing.close,USEquityPricing.volume]
     outputs = ['pbeta', 'vbeta','dbeta']
 
