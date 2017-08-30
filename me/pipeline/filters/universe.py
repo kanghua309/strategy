@@ -138,7 +138,6 @@ def sector_filter(tradeable_count,sector_exposure_limit,smoothing_func = None):
     else:
         threshold = int(math.ceil(sector_exposure_limit * tradeable_count))
 
-
     filters = None
     for industry,ino in industry_class.iteritems():
         print industry,ino
