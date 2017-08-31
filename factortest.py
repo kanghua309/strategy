@@ -23,8 +23,9 @@ from zipline.api import (
     symbol,
     sid,
     get_datetime,
-
 )
+
+from me.pipeline.factors.tsfactor import MarketCap,default_china_equity_universe_mask
 
 from zipline.pipeline import Pipeline
 from zipline.pipeline.factors import RSI
@@ -36,6 +37,7 @@ from zipline.pipeline.loaders.frame import DataFrameLoader
 from zipline.pipeline.factors import AverageDollarVolume, CustomFactor, Latest ,RollingLinearRegressionOfReturns
 
 from me.pipeline.factors.prediction import RNNPredict
+from me.pipeline.factors.liquid import ADV_adj
 
 from   itertools import chain
 import numpy as np
@@ -51,14 +53,17 @@ import easytrader
 
 profolio_size = 10
 
+
+
 def make_pipeline():
 
     #universe = sector_filter(100, 0.1).downsample('month_start')
     universe = make_china_equity_universe(
-        target_size = 1000,
+        target_size = 1500,
         mask = default_china_equity_universe_mask(),
-        max_group_weight= 0.3,
-        smoothing_func = lambda f: f.downsample('month_start')
+        max_group_weight= 0.03,
+        smoothing_func = lambda f: f.downsample('month_start'),
+
     )
 
     #universe2 = sector_filter2(100, 0.1)
@@ -72,11 +77,14 @@ def make_pipeline():
         mask = (universe),
     ).beta + 0.33 * 1.0
 
+    adj = ADV_adj(window_length=252)
+
+    volume = AverageDollarVolume(window_length=21)
+
+    cap = MarketCap()
 
     #liquid = ADV_adj()
     #pred = RNNPredict()
-
-
     # Build Filters representing the top and bottom 150 stocks by our combined ranking system.
     # We'll use these as our tradeable universe each day.
     #rank  = pred.rank()
@@ -89,9 +97,11 @@ def make_pipeline():
     return Pipeline(
         columns={
             'beta': beta.downsample('month_start'),
-            #'adv' : liquid.downsample('month_start'),
+            'adj' : adj.downsample('month_start'),
+            'volume': volume.downsample('month_start'),
+            'cap': cap.downsample('month_start'),
             #'sector': sector,
-             #'shorts': test.bottom(2),
+            #'shorts': test.bottom(2),
         },
         screen=universe,
     )
@@ -99,7 +109,11 @@ def make_pipeline():
 
 def rebalance(context, data):
 
-    print "rebalance ----",context.pipeline_data.tail(5)
+    print "rebalance ----",len(context.pipeline_data)
+    print "describe adj :\n", context.pipeline_data.adj.describe()
+    print "describe volume:\n", context.pipeline_data.volume.describe()
+    print "describe cap:\n", context.pipeline_data.cap.describe()
+
     pass
 
 def initialize(context):

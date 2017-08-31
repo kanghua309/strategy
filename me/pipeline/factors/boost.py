@@ -31,11 +31,10 @@ class HurstExp(CustomFactor):
            
 
 class Beta(CustomFactor):
-    print "--------------beta---------------"
+    #print "--------------beta---------------"
     inputs = [USEquityPricing.close,USEquityPricing.volume]
     outputs = ['pbeta', 'vbeta','dbeta']
-
-    window_length = 5 #TODO FIX IT
+    window_length = 252 #TODO FIX IT
     def _beta(self,ts):
         ts[np.isnan(ts)] = 0 #TODO FIX it ?
         reg = np.polyfit(np.arange(len(ts)),ts,1)
@@ -47,3 +46,21 @@ class Beta(CustomFactor):
         out[:].pbeta = price_pct.apply(self._beta)
         out[:].vbeta = volume_pct.apply(self._beta)
         out[:].dbeta = np.abs(out[:].vbeta - out[:].pbeta)
+
+class CrossSectionalReturns(CustomFactor):
+    inputs = [USEquityPricing.close,]
+    window_length = 252
+    lookback_window = 50
+    log_returns = True
+    def compute(self, today, assets, out, close_price):
+        n = self.lookback_window
+        if self.log_returns:
+            returns = np.log(close_price[n:] / close_price[:-n])
+            # Or
+            # log_px = np.log(close_price)
+            # returns = log_px[n:] - log_px[:-n]
+        else:
+            returns = close_price[n:] / close_price[:-n] - 1
+        means = np.nanmean(returns, axis=1)
+        demeaned_returns = (returns.T - means).T
+        out[:] = np.nanmean(demeaned_returns, axis=0)

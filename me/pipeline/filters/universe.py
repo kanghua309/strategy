@@ -21,58 +21,13 @@ from me.pipeline.factors.tsfactor import MarketCap,default_china_equity_universe
 from me.pipeline.utils.meta import load_tushare_df
 from me.pipeline.classifiers.tushare.sector import get_sector,get_sector_size,get_sector_class
 
-market_cap_limit = 1#yi
+MARKET_CAP_DOWNLIMIT = 5.0e+9
+ADV_ADJ_DOWNLIMIT = 1.0e+8
 
-# Average Dollar Volume without nanmean, so that recent IPOs are truly removed
-'''
-class ADV_adj(CustomFactor):
-    inputs = [USEquityPricing.close, USEquityPricing.volume]
-    window_length = 252
-    def compute(self, today, assets, out, close, volume):
-        close[np.isnan(close)] = 0
-        out[:] = np.mean(close * volume, 0)
-'''
-'''
-def getMarketCap():
-    print("==enter getMarketCap==")
-    info=load_tushare_df("basic") 
-    class MarketCap(CustomFactor):
-        # Shares Outstanding  
-        inputs = [USEquityPricing.close]
-        window_length = 1    
-        def outstanding(self,assets):
-            oslist=[]
-            for msid in assets:
-                stock = sid(msid).symbol
-                try:
-                    os = info.ix[stock]['outstanding']
-                    oslist.append(os)
-                except:
-                    oslist.append(0)
-                else:
-                    pass
-            return oslist
-        def compute(self, today, assets, out, close):
-            print "---------------MarketCap--------------", today
-            out[:] =   close[-1] * self.outstanding(assets)
-    return MarketCap()
-'''
-'''
-def IsInSymbolsList(sec_list):  
-    #Returns a factor indicating membership (=1) in the given iterable of securities
-    print("==enter IsInSymbolsList==")
-    class IsInSecListFactor(CustomFilter):  
-        inputs = [];  
-        window_length = 1
-        def compute(self, today, asset_ids, out, *inputs):
-            out[:] = asset_ids.isin(sec_list)  
-    return IsInSecListFactor()  
-'''
 
 def universe_filter(smoothing_func = None):
     """
     Create a Pipeline producing Filters implementing common acceptance criteria.
-    
     Returns
     -------
     zipline.Filter
@@ -81,15 +36,17 @@ def universe_filter(smoothing_func = None):
     factors = {
      'MarketCap': MarketCap(),
      'ADV_adj'  : ADV_adj(),
+     'Sector'   : get_sector(),
     }
 
 
     #func = lambda f: f.downsample('month_start')
     if smoothing_func != None:
         factors = { id:smoothing_func(factors[id]) for id in factors.iterkeys() }
-    print factors
-    factors['MarketCap'] = factors['MarketCap'] > market_cap_limit
-    factors['ADV_adj'] = factors['ADV_adj'] > 2500000
+    #print factors
+    factors['MarketCap'] = factors['MarketCap'] > MARKET_CAP_DOWNLIMIT
+    factors['ADV_adj']   = factors['ADV_adj']   > ADV_ADJ_DOWNLIMIT
+    factors['Sector']    = factors['Sector'].notnull()
 
     filters = None
     for value in factors.itervalues():
@@ -98,7 +55,7 @@ def universe_filter(smoothing_func = None):
         else:
            filters = (filters & value)
 
-    print filters
+    #print filters
 
     #mySymbolsListfiter = default_china_equity_universe_mask()
     # Equities with an average daily volume greater than 5000000.
@@ -108,10 +65,10 @@ def universe_filter(smoothing_func = None):
     #universe_filter = (mySymbolsListfiter & market_cap_filter & liquid & high_volume )
     #universe_filter = ( maket_cap_filter & liquid )
 
-    universe_filter = filters
-    return universe_filter
+    return filters
 
 def sector_filter(tradeable_count,sector_exposure_limit,smoothing_func = None):
+
     """
     Mask for Pipeline in create_tradeable. Limits each sector so as not to be over-exposed
 
@@ -131,30 +88,30 @@ def sector_filter(tradeable_count,sector_exposure_limit,smoothing_func = None):
     #print("g_inds",g_inds)
     sector_factor = get_sector(industry_class)
     # set thresholds
-    if sector_exposure_limit < ((1. / get_sector_size())):
-        threshold = int(math.ceil((1. / get_sector_size()) * tradeable_count))
+    sector_size = get_sector_size()
+    if sector_exposure_limit < ((1. / sector_size)):
+        threshold = int(math.ceil((1. /sector_size) * tradeable_count))
     elif sector_exposure_limit > 1.:
         threshold = tradeable_count
     else:
         threshold = int(math.ceil(sector_exposure_limit * tradeable_count))
 
+    print "tradeable_count %s , get_sector_size %s , industry threashold %s:" % (tradeable_count,sector_size,threshold)
     filters = None
     for industry,ino in industry_class.iteritems():
-        print industry,ino
+        #print industry,ino,industry_class[industry]
         mask=sector_factor.eq(industry_class[industry])
         if smoothing_func != None:
            value = smoothing_func(AverageDollarVolume(window_length=21)).top(threshold,mask)
         else:
            value = AverageDollarVolume(window_length=21).top(threshold, mask)
-        print value
+        #print value
         #print filters
         if filters == None:
            filters = value
         else:
            filters = (filters | value)
-
     '''
-
     transport_trim = AverageDollarVolume(window_length=21).top(threshold, mask=sector_factor.eq(industry_class['交通运输'.decode("UTF-8")]))             #
     instrument_trim = AverageDollarVolume(window_length=21).top(threshold, mask=sector_factor.eq(industry_class['仪器仪表'.decode("UTF-8")]))
     media_entertainment_trim = AverageDollarVolume(window_length=21).top(threshold, mask=sector_factor.eq(industry_class['传媒娱乐'.decode("UTF-8")]))   #
@@ -231,6 +188,8 @@ def make_china_equity_universe(
         smoothing_func):
     ufilters = universe_filter(smoothing_func)
     sfilters = sector_filter(target_size,max_group_weight,smoothing_func)
-    return ufilters|sfilters|mask # &? TODO
+
+    return (ufilters & sfilters) & mask # &? TODO
+    #return (sfilters)
 
 

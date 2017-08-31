@@ -11,8 +11,8 @@ from zipline.pipeline.factors import CustomFactor
 
 class ADV_adj(CustomFactor):
     inputs = [USEquityPricing.close, USEquityPricing.volume]
-    window_length = 10
+    window_length = 252
     def compute(self, today, assets, out, close, volume):
-        print "--------------ADV_adj---------------",today
+        #print "--------------ADV_adj---------------",today
         close[np.isnan(close)] = 0
         out[:] = np.mean(close * volume, 0)

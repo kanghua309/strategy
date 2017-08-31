@@ -18,7 +18,7 @@ from zipline.pipeline.filters import CustomFilter
 from me.pipeline.utils.meta import load_tushare_df
 
 def MarketCap():
-    print("==enter getMarketCap==")
+    #print("==enter getMarketCap==")
     info=load_tushare_df("basic")
     class MarketCap(CustomFactor):
         # Shares Outstanding
@@ -29,15 +29,15 @@ def MarketCap():
             for msid in assets:
                 stock = sid(msid).symbol
                 try:
-                    os = info.ix[stock]['outstanding']
+                    os = info.ix[stock]['outstanding'] * 1.0e+8
                     oslist.append(os)
                 except:
-                    oslist.append(0)
+                    oslist.append(0.0)
                 else:
                     pass
             return oslist
         def compute(self, today, assets, out, close):
-            print "---------------MarketCap--------------", today
+            #print "---------------MarketCap--------------", today
             out[:] =   close[-1] * self.outstanding(assets)
     return MarketCap()
 
@@ -47,26 +47,11 @@ def default_china_equity_universe_mask():
     info = load_tushare_df("basic")
     sme = load_tushare_df("sme")
     gem = load_tushare_df("gem")
-    st = load_tushare_df("st")
+    st  = load_tushare_df("st")
     uset = pd.concat([sme, gem, st])
     maskset = info.drop([y for y in uset['code']], axis=0).index  # st,sme,gem 的都不要，稳健型只要主板股票
-
-    '''
-    for EachStockID in newset.index:
-        a_stocks.append(EachStockID)
-    print("test ... ",)
-    sec_list = []
-    for y in a_stocks:
-        try:
-            sid = symbol(y).sid
-        except:
-            pass
-        else:
-            sec_list.append(sid)
-    '''
-    print("---sec_list:", type(maskset),maskset)
     #Returns a factor indicating membership (=1) in the given iterable of securities
-    print("==enter IsInSymbolsList==")
+    #print("==enter IsInSymbolsList==")
     class IsInSecListFactor(CustomFilter):
         inputs = [];
         window_length = 1
