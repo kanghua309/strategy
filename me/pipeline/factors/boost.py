@@ -33,7 +33,7 @@ class HurstExp(CustomFactor):
 class Beta(CustomFactor):
     #print "--------------beta---------------"
     inputs = [USEquityPricing.close,USEquityPricing.volume]
-    outputs = ['pbeta', 'vbeta','dbeta']
+    outputs = ['pbeta','vbeta','dbeta']
     window_length = 252 #TODO FIX IT
     def _beta(self,ts):
         ts[np.isnan(ts)] = 0 #TODO FIX it ?
@@ -50,17 +50,18 @@ class Beta(CustomFactor):
 class CrossSectionalReturns(CustomFactor):
     inputs = [USEquityPricing.close,]
     window_length = 252
-    lookback_window = window_length/5 #how to as input param ?
+    #lookback_window = window_length/5 #how to as input param ?
     log_returns = True
-    def compute(self, today, assets, out, close_price):
-        n = self.lookback_window
+    def compute(self, today, assets, out, close):
+        #print  "CrossSectionalReturns:", today,assets,close,len(close)
+        lookback = len(close) / 5
         if self.log_returns:
-            returns = np.log(close_price[n:] / close_price[:-n])
+            returns = np.log(close[lookback:] / close[:-lookback])
             # Or
             # log_px = np.log(close_price)
             # returns = log_px[n:] - log_px[:-n]
         else:
-            returns = close_price[n:] / close_price[:-n] - 1
+            returns = close[lookback:] / close[:-lookback] - 1
         means = np.nanmean(returns, axis=1)
         demeaned_returns = (returns.T - means).T
         out[:] = np.nanmean(demeaned_returns, axis=0)
@@ -75,12 +76,13 @@ class Momentum(CustomFactor):
     """
     inputs = [USEquityPricing.close]
     window_length = 252
-    lookback_window = window_length / 10  # how to as input param ?
-    def compute(self, today, assets, out, prices):
-        lookback_window = self.lookback_window
-        window_length = self.window_length
-        out[:] = ((prices[-lookback_window] - prices[-window_length])/prices[-window_length] -
-                  (prices[-1] - prices[-lookback_window])/prices[-lookback_window])
+    #lookback_window = window_length / 10  # how to as input param ?
+    def compute(self, today, assets, out, close):
+        #print "Momentum:",today, assets
+        window_length = len(close)
+        lookback = window_length / 10
+        out[:] = ((close[-lookback] - close[-window_length]) / close[-window_length] -
+                  (close[-1] - close[-lookback]) / close[-lookback])
 
 
 class ADV_adj(CustomFactor):

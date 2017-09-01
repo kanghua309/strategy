@@ -32,10 +32,10 @@ from me.pipeline.factors.boost import Momentum,CrossSectionalReturns
 from zipline.pipeline import Pipeline
 from zipline.pipeline.factors import RSI
 from zipline.pipeline.data import USEquityPricing
-from zipline.pipeline.data import Column  
+from zipline.pipeline.data import Column
 from zipline.pipeline.data import DataSet
-from zipline.pipeline.engine import SimplePipelineEngine  
-from zipline.pipeline.loaders.frame import DataFrameLoader 
+from zipline.pipeline.engine import SimplePipelineEngine
+from zipline.pipeline.loaders.frame import DataFrameLoader
 from zipline.pipeline.factors import AverageDollarVolume, CustomFactor, Latest ,RollingLinearRegressionOfReturns
 from me.pipeline.classifiers.tushare.sector import get_sector,get_sector_size,get_sector_class
 
@@ -55,16 +55,9 @@ from datetime import timedelta, date, datetime
 import easytrader
 
 MAX_GROSS_LEVERAGE = 1.0
-NUM_LONG_POSITIONS = 20
-NUM_SHORT_POSITIONS = 20
+NUM_LONG_POSITIONS = 10
+NUM_SHORT_POSITIONS = 10
 MAX_BETA_EXPOSURE = 0.30
-
-MAX_SHORT_POSITION_SIZE = 2*1.0/(NUM_LONG_POSITIONS + NUM_SHORT_POSITIONS)
-MAX_LONG_POSITION_SIZE = 2*1.0/(NUM_LONG_POSITIONS + NUM_SHORT_POSITIONS)
-
-MAX_SECTOR_EXPOSURE = 0.10
-MAX_BETA_EXPOSURE = 0.20
-
 
 profolio_size = 19
 def make_pipeline():
@@ -102,8 +95,8 @@ def make_pipeline():
         csreturn.rank(mask=universe).zscore()
     )
     longs =  combined_rank.top(NUM_LONG_POSITIONS)
-    #shorts = combined_rank.bottom(NUM_SHORT_POSITIONS)
-    long_short_screen = (longs)
+    shorts = combined_rank.bottom(NUM_SHORT_POSITIONS)
+    long_short_screen = (longs | shorts)
 
     beta = 0.66 * RollingLinearRegressionOfReturns(
         target=symbol('000001'),  # sid(8554),
@@ -116,7 +109,7 @@ def make_pipeline():
     return Pipeline(
         columns={
             'longs': longs,
-            #'shorts': shorts,
+            'shorts': shorts,
             'combined_rank': combined_rank,
             'momentum': momentum,
             'return' : csreturn,
@@ -128,6 +121,8 @@ def make_pipeline():
 
 
 def rebalance(context, data):
+    if (context.sim_params.end_session - get_datetime() > timedelta(days=6)): #只在最后一个周末;周5运行
+        return
     pipeline_data = context.pipeline_data
     print "rebalance ----",len(context.pipeline_data),get_datetime()
     #print "describe adj :\n", context.pipeline_data.adj.describe()
@@ -149,32 +144,30 @@ def rebalance(context, data):
     # objective = cvx.Maximize(df.pred.as_matrix() * w)  # mini????
     objective = cvx.Maximize(pipeline_data.combined_rank.as_matrix() * w)
 
-    constraints = [cvx.sum_entries(w) == 1.0*MAX_GROSS_LEVERAGE, w >= 0.0]  # dollar-neutral long/short
+    constraints = [cvx.sum_entries(w) == 1*MAX_GROSS_LEVERAGE, w > 0]  # dollar-neutral long/short
     # constraints.append(cvx.sum_entries(cvx.abs(w)) <= 1)  # leverage constraint
-    constraints.extend([w > 0.001, w <= MAX_SHORT_POSITION_SIZE])  # long exposure
+    constraints.extend([w > 0.02, w <= 0.20])  # long exposure
     riskvec = pipeline_data.market_beta.fillna(1.0).as_matrix() #TODO
 
     constraints.extend([riskvec * w <= MAX_BETA_EXPOSURE])  # risk
 
     # filters = [i for i in range(len(africa)) if africa[i] == 1]
-    #版块对冲当前，因为股票组合小，不合适
-    sector_dict = {}
+    '''  #版块对冲当前，因为股票组合小，不合适
+    secMap = {}
     idx = 0
     #print pipeline_data.sector
-    for equite,classid in pipeline_data.sector.iteritems():
+    for equite,classid in df.sector.iteritems():
         #print("--------###", equite.symbol, classid)
-        if classid not in sector_dict:
+        if classid not in secMap:
             _ = []
-            sector_dict[classid] = _
-        sector_dict[classid].append(idx)
+            secMap[classid] = _
+        secMap[classid].append(idx)
         idx += 1
-    sector_size = len(sector_dict)
-    for k, v in sector_dict.iteritems():
-        print sector_size,v ,1.0/sector_size * ( 1.0 + MAX_SECTOR_EXPOSURE) ,1.0/sector_size *( 1.0 - MAX_SECTOR_EXPOSURE)
-
-        constraints.append(cvx.sum_entries(w[v]) <= 1.0/sector_size * ( 1.0+ MAX_SECTOR_EXPOSURE)),
-        constraints.append(cvx.sum_entries(w[v]) >= 1.0/sector_size *( 1.0 - MAX_SECTOR_EXPOSURE))
-
+    for k, v in secMap.iteritems():
+        print(len(secMap))
+        print(w[v])
+        constraints.append(cvx.sum_entries(w[v]) == 1/len(secMap))
+    '''
     # print("risk_factor_exposures.as_matrix().T",pipeline_data.market_beta.fillna(1.0),pipeline_data.market_beta.fillna(1.0).values)
     # constraints.append(pipeline_data.market_beta.fillna(1.0)*w<= MAX_BETA_EXPOSURE)
 
