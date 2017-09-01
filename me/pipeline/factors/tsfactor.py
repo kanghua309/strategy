@@ -10,6 +10,7 @@ from zipline.api import (
     symbol,
     sid,
 )
+import datetime
 from zipline.pipeline.data import USEquityPricing
 from zipline.pipeline.factors import AverageDollarVolume, CustomFactor
 from zipline.pipeline.filters import CustomFilter
@@ -40,6 +41,62 @@ def MarketCap():
             #print "---------------MarketCap--------------", today
             out[:] =   close[-1] * self.outstanding(assets)
     return MarketCap()
+
+
+def Fundamental():
+    columns = ['pe',  # 市盈率
+               'outstanding',  # 流通股本(亿)
+               'totals',  # 总股本(亿)
+               'totalAssets',  # 总资产(万)
+               'liquidAssets',  # 流动资产
+               'fixedAssets',  # 固定资产
+               'reserved',  # 公积金
+               'reservedPerShare',  # 每股公积金
+               'esp',  # 每股收益
+               'bvps',  # 每股净资
+               'pb',  # 市净率
+               'timeToMarket',  # 上市日期 0：未上市
+               'undp',  # 未分利润
+               'perundp',  # 每股未分配
+               'rev',  # 收入同比(%)
+               'profit',  # 利润同比(%)
+               'gpr',  # 毛利率(%)
+               'npr',  # 净利润率
+               'holders',  # 股东人数
+               ]
+    info=load_tushare_df("basic")
+    class Fundamental(CustomFactor):
+        outputs = columns
+        inputs = [USEquityPricing.close]
+        window_length = 1
+        def handle(self, assets):
+            stocks = [sid(msid).symbol for msid in assets]
+            #print stocks
+            #print info.ix[stocks][columns]
+            return info.ix[stocks][columns]
+        def compute(self, today, assets, out,close):
+            df = self.handle(assets)
+            out.pe[:] = df.pe
+            out.outstanding[:] =  close[-1] * df.outstanding * 1.0e+8
+            out.totals[:] = close[-1] * df.totals * 1.0e+8
+            out.totalAssets[:] = df.totalAssets * 1.0e+4
+            out.liquidAssets[:] = df.liquidAssets
+            out.fixedAssets[:] = df.fixedAssets
+            out.reserved[:] =df.reserved
+            out.reservedPerShare[:] = df.reservedPerShare
+            out.esp[:] = df.esp
+            out.bvps[:] = df.bvps
+            out.pb[:] = df.pb
+            out.timeToMarket[:] = df.timeToMarket
+            out.undp[:] = df.undp
+            out.perundp[:] = df.perundp
+            out.rev[:] = df.rev
+            out.profit[:] = df.profit
+            out.gpr[:] = df.gpr
+            out.npr[:] = df.npr
+            out.holders[:] = df.holders
+
+    return Fundamental()
 
 
 def default_china_equity_universe_mask():

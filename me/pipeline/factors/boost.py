@@ -41,16 +41,16 @@ class Beta(CustomFactor):
         return reg[0]
 
     def compute(self, today, assets, out, close, volume):
-        price_pct = pd.DataFrame(close, columns=assets).pct_change()[1:]
+        price_pct  = pd.DataFrame(close,  columns=assets).pct_change()[1:]
         volume_pct = pd.DataFrame(volume, columns=assets).pct_change()[1:]
-        out[:].pbeta = price_pct.apply(self._beta)
-        out[:].vbeta = volume_pct.apply(self._beta)
-        out[:].dbeta = np.abs(out[:].vbeta - out[:].pbeta)
+        out.pbeta[:] = price_pct.apply(self._beta)
+        out.vbeta[:] = volume_pct.apply(self._beta)
+        out.dbeta[:] = np.abs(out.vbeta[:] - out.pbeta[:])
 
 class CrossSectionalReturns(CustomFactor):
     inputs = [USEquityPricing.close,]
     window_length = 252
-    lookback_window = 50
+    lookback_window = 50 #how to as input param ?
     log_returns = True
     def compute(self, today, assets, out, close_price):
         n = self.lookback_window
@@ -64,3 +64,27 @@ class CrossSectionalReturns(CustomFactor):
         means = np.nanmean(returns, axis=1)
         demeaned_returns = (returns.T - means).T
         out[:] = np.nanmean(demeaned_returns, axis=0)
+
+class Momentum(CustomFactor):
+    """
+    Here we define a basic momentum factor using a CustomFactor. We take
+    the momentum from the past year up until the beginning of this month
+    and penalize it by the momentum over this month. We are tempering a
+    long-term trend with a short-term reversal in hopes that we get a
+    better measure of momentum.
+    """
+    inputs = [USEquityPricing.close]
+    window_length = 252
+
+    def compute(self, today, assets, out, prices):
+        out[:] = ((prices[-21] - prices[-252])/prices[-252] -
+                  (prices[-1] - prices[-21])/prices[-21])
+
+
+class ADV_adj(CustomFactor):
+    inputs = [USEquityPricing.close, USEquityPricing.volume]
+    window_length = 252
+    def compute(self, today, assets, out, close, volume):
+        #print "--------------ADV_adj---------------",today
+        close[np.isnan(close)] = 0
+        out[:] = np.mean(close * volume, 0)

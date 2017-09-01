@@ -10,15 +10,10 @@ import math
 
 
 
-from zipline.pipeline.data import USEquityPricing
-from zipline.pipeline.factors import AverageDollarVolume, CustomFactor
-from zipline.pipeline.filters import CustomFilter
+from zipline.pipeline.factors import AverageDollarVolume
 
-
-from me.pipeline.factors.liquid import ADV_adj
-from me.pipeline.factors.tsfactor import MarketCap,default_china_equity_universe_mask
-
-from me.pipeline.utils.meta import load_tushare_df
+from me.pipeline.factors.tsfactor import Fundamental
+from me.pipeline.factors.boost import ADV_adj
 from me.pipeline.classifiers.tushare.sector import get_sector,get_sector_size,get_sector_class
 
 MARKET_CAP_DOWNLIMIT = 5.0e+9
@@ -34,7 +29,7 @@ def universe_filter(smoothing_func = None):
         Filter to control tradeablility
     """
     factors = {
-     'MarketCap': MarketCap(),
+     'MarketCap': Fundamental().outstanding,
      'ADV_adj'  : ADV_adj(),
      'Sector'   : get_sector(),
     }
