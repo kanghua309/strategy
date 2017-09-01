@@ -50,7 +50,7 @@ class Beta(CustomFactor):
 class CrossSectionalReturns(CustomFactor):
     inputs = [USEquityPricing.close,]
     window_length = 252
-    lookback_window = 50 #how to as input param ?
+    lookback_window = window_length/5 #how to as input param ?
     log_returns = True
     def compute(self, today, assets, out, close_price):
         n = self.lookback_window
@@ -75,10 +75,12 @@ class Momentum(CustomFactor):
     """
     inputs = [USEquityPricing.close]
     window_length = 252
-
+    lookback_window = window_length / 10  # how to as input param ?
     def compute(self, today, assets, out, prices):
-        out[:] = ((prices[-21] - prices[-252])/prices[-252] -
-                  (prices[-1] - prices[-21])/prices[-21])
+        lookback_window = self.lookback_window
+        window_length = self.window_length
+        out[:] = ((prices[-lookback_window] - prices[-window_length])/prices[-window_length] -
+                  (prices[-1] - prices[-lookback_window])/prices[-lookback_window])
 
 
 class ADV_adj(CustomFactor):

@@ -57,7 +57,7 @@ import easytrader
 MAX_GROSS_LEVERAGE = 1.0
 NUM_LONG_POSITIONS = 10
 NUM_SHORT_POSITIONS = 10
-MAX_BETA_EXPOSURE = 0.50
+MAX_BETA_EXPOSURE = 0.30
 
 profolio_size = 19
 def make_pipeline():
@@ -88,8 +88,8 @@ def make_pipeline():
     #longs = pred.bottom(1)
 
     sector = get_sector()
-    csreturn = CrossSectionalReturns(window_length=252)
-    momentum = Momentum(window_length=252)
+    csreturn = CrossSectionalReturns(window_length=21)
+    momentum = Momentum(window_length=21)
     combined_rank = (
         momentum.rank(mask=universe).zscore() +
         csreturn.rank(mask=universe).zscore()
@@ -101,7 +101,7 @@ def make_pipeline():
     beta = 0.66 * RollingLinearRegressionOfReturns(
         target=symbol('000001'),  # sid(8554),
         returns_length=6,
-        regression_length=252,
+        regression_length=21,
         # mask=long_short_screen
         mask=(long_short_screen),
     ).beta + 0.33 * 1.0
@@ -122,11 +122,11 @@ def make_pipeline():
 
 def rebalance(context, data):
     pipeline_data = context.pipeline_data
-    print "rebalance ----",len(context.pipeline_data),get_datetime(),len( pipeline_data.index)
+    print "rebalance ----",len(context.pipeline_data),get_datetime()
     #print "describe adj :\n", context.pipeline_data.adj.describe()
     #print "describe volume:\n", context.pipeline_data.volume.describe()
     #print "describe cap:\n", context.pipeline_data.cap.describe()
-    print "data \n", pipeline_data.head(10)
+    print "data \n", pipeline_data
     todays_universe = pipeline_data.index
     ### Extract from pipeline any specific risk factors you want
     # to neutralize that you have already calculated
@@ -144,8 +144,8 @@ def rebalance(context, data):
 
     constraints = [cvx.sum_entries(w) == 1*MAX_GROSS_LEVERAGE, w > 0]  # dollar-neutral long/short
     # constraints.append(cvx.sum_entries(cvx.abs(w)) <= 1)  # leverage constraint
-    constraints.extend([w > 0.01, w <= 0.85])  # long exposure
-    riskvec = pipeline_data.market_beta.fillna(1.0).as_matrix()
+    constraints.extend([w > 0.02, w <= 0.20])  # long exposure
+    riskvec = pipeline_data.market_beta.fillna(1.0).as_matrix() #TODO
 
     constraints.extend([riskvec * w <= MAX_BETA_EXPOSURE])  # risk
 
@@ -172,8 +172,9 @@ def rebalance(context, data):
     prob = cvx.Problem(objective, constraints)
     prob.solve()
     if prob.status != 'optimal':
-        print "optimal failed ", prob.status
-        raise SystemExit(-1)
+        print "Optimal failed %s , do nothing" % prob.status
+        return
+        #raise SystemExit(-1)
 
     print np.squeeze(np.asarray(w.value))  # Remove single-dimensional entries from the shape of an array
     pass
