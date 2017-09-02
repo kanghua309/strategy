@@ -179,8 +179,6 @@ def rebalance(context, data):
             # except Exception,e:
             print "stock %s trader exception %s" % (stock, e)
             # raise SystemExit(-1)
-
-
     pass
 
 def optimalize(context,mask):
