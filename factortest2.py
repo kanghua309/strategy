@@ -112,7 +112,8 @@ def rebalance(context, data):
     df = pipeline_data.sort_values(axis=0, by='pred', ascending=False)
     df.index = [index.symbol for index in df.index]
     print "Rebalance - Pipeline factor"
-    print (df.head(10),df.tail(10))
+    print df.head(10)
+    print df.tail(10)
     xq_profolio = get_xq_profolio_keep_cost_price(context)
     print "Rebalance - Current xq profolio"
     print xq_profolio
@@ -128,10 +129,10 @@ def rebalance(context, data):
         keep_price = xq_profolio[index]
         current_price = data.current(symbol(index), 'price')
         print "Rebalance - index, keep_price, current_price"
-        if keep_price / current_price > 1.05:
+        if keep_price / current_price > 1.15:
             print "%s has down to stop limit, sell it" % index
             del xq_new_profolio_dict[index]
-        if keep_price / current_price < 0.95:
+        if keep_price / current_price < 0.90:
             print "%s has up to expected price , sell it" % index
             del xq_new_profolio_dict[index]
             # if df.at[index,"pred"] > math.log(1.05):
@@ -168,11 +169,11 @@ def rebalance(context, data):
             if np.isnan(row2['beta']):
                 #print "index2 %s" % index2
                 continue
-            if row1["pred"] < math.log(0.95) and not xq_new_profolio_dict.has_key(
+            if row1["pred"] < math.log(0.90) and not xq_new_profolio_dict.has_key(
                     index1) and xq_new_profolio_dict.has_key(index2):
-                print "Rebalance - it predict will up", index1, row1["pred"]
-                if abs(row1["pred"] - row2["pred"]) > math.log(0.05):
-                    print "Rebalance - instead my stock %s in profolio by %s" % (index2,index1)
+                print "Rebalance - stock %s predict will up %s" %(index1, row1["pred"])
+                if abs(row1["pred"] - row2["pred"]) > math.log(0.10):
+                    print "Rebalance -instead my stock %s in profolio by %s" % (index2,index1)
                     print xq_new_profolio_dict[index2]
                     del xq_new_profolio_dict[index2]
                     xq_new_profolio_dict[index1] = 0
@@ -193,9 +194,9 @@ def rebalance(context, data):
 
     constraints = [cvx.sum_entries(w) == 1, w > 0]  # dollar-neutral long/short
     # constraints.append(cvx.sum_entries(cvx.abs(w)) <= 1)  # leverage constraint
-    constraints.extend([w > 0.05, w <= 0.25])  # long exposure
+    constraints.extend([w > 0.04, w <= 0.25])  # long exposure
     riskvec = df.beta.fillna(1.0).as_matrix()
-    MAX_BETA_EXPOSURE = 0.30
+    MAX_BETA_EXPOSURE = 0.20
     constraints.extend([riskvec * w <= MAX_BETA_EXPOSURE])  # risk
 
     # filters = [i for i in range(len(africa)) if africa[i] == 1]
@@ -234,6 +235,7 @@ def rebalance(context, data):
             print "sell it now ......"
             try:
                  context.user.adjust_weight(stock,0)
+                 pass
             except easytrader.webtrader.TradeError, e:
                 print "Trader exception %s", e
                 raise SystemExit(-1)
@@ -245,6 +247,7 @@ def rebalance(context, data):
         print "stock %s set weight %s" %(c,weight)
         try:
             context.user.adjust_weight(c,weight)
+            pass
         except easytrader.webtrader.TradeError as e:
         #except Exception,e:
             print "Trader exception %s" % e

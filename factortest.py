@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
 Created on Sat Apr 15 10:52:27 2017
@@ -55,15 +54,16 @@ from datetime import timedelta, date, datetime
 import easytrader
 
 MAX_GROSS_LEVERAGE = 1.0
-NUM_LONG_POSITIONS = 20
-NUM_SHORT_POSITIONS = 20
+NUM_LONG_POSITIONS  = 20
+NUM_SHORT_POSITIONS = 0
 MAX_BETA_EXPOSURE = 0.30
 
-MAX_SHORT_POSITION_SIZE = 2*1.0/(NUM_LONG_POSITIONS + NUM_SHORT_POSITIONS)
-MAX_LONG_POSITION_SIZE = 2*1.0/(NUM_LONG_POSITIONS + NUM_SHORT_POSITIONS)
+MAX_LONG_POSITION_SIZE = 4 * 1.0/(NUM_LONG_POSITIONS + NUM_SHORT_POSITIONS)
+#MAX_SHORT_POSITION_SIZE = 2*1.0/(NUM_LONG_POSITIONS + NUM_SHORT_POSITIONS)
 
-MAX_SECTOR_EXPOSURE = 0.10
-MAX_BETA_EXPOSURE = 0.20
+MIN_LONG_POSITION_SIZE = 0.5 * 1.0/(NUM_LONG_POSITIONS + NUM_SHORT_POSITIONS)
+
+MAX_SECTOR_EXPOSURE = 0.30
 
 
 profolio_size = 19
@@ -151,13 +151,16 @@ def rebalance(context, data):
 
     constraints = [cvx.sum_entries(w) == 1.0*MAX_GROSS_LEVERAGE, w >= 0.0]  # dollar-neutral long/short
     # constraints.append(cvx.sum_entries(cvx.abs(w)) <= 1)  # leverage constraint
-    constraints.extend([w > 0.001, w <= MAX_SHORT_POSITION_SIZE])  # long exposure
+    constraints.extend([w >= MIN_LONG_POSITION_SIZE, w <= MAX_LONG_POSITION_SIZE])  # long exposure
     riskvec = pipeline_data.market_beta.fillna(1.0).as_matrix() #TODO
 
     constraints.extend([riskvec * w <= MAX_BETA_EXPOSURE])  # risk
 
+    print "MIN_SHORT_POSITION_SIZE %s, MAX_SHORT_POSITION_SIZE %s,MAX_BETA_EXPOSURE %s" %(MIN_LONG_POSITION_SIZE,MAX_LONG_POSITION_SIZE,MAX_BETA_EXPOSURE)
+
     # filters = [i for i in range(len(africa)) if africa[i] == 1]
     #版块对冲当前，因为股票组合小，不合适
+    '''
     sector_dict = {}
     idx = 0
     #print pipeline_data.sector
@@ -171,10 +174,9 @@ def rebalance(context, data):
     sector_size = len(sector_dict)
     for k, v in sector_dict.iteritems():
         print sector_size,v ,1.0/sector_size * ( 1.0 + MAX_SECTOR_EXPOSURE) ,1.0/sector_size *( 1.0 - MAX_SECTOR_EXPOSURE)
-
         constraints.append(cvx.sum_entries(w[v]) <= 1.0/sector_size * ( 1.0+ MAX_SECTOR_EXPOSURE)),
-        constraints.append(cvx.sum_entries(w[v]) >= 1.0/sector_size *( 1.0 - MAX_SECTOR_EXPOSURE))
-
+        constraints.append(cvx.sum_entries(w[v]) >= 1.0/sector_size * ( 1.0 - MAX_SECTOR_EXPOSURE))
+    '''
     # print("risk_factor_exposures.as_matrix().T",pipeline_data.market_beta.fillna(1.0),pipeline_data.market_beta.fillna(1.0).values)
     # constraints.append(pipeline_data.market_beta.fillna(1.0)*w<= MAX_BETA_EXPOSURE)
 

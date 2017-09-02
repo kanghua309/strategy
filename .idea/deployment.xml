@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
-  <component name="PublishConfigData" autoUpload="Always" serverName="GPU">
+  <component name="PublishConfigData" autoUpload="Always" serverName="GPU" showNewOnSourceInSync="false">
     <serverData>
       <paths name="GPU">
         <serverdata>
           <mappings>
-            <mapping deploy="/data/kanghua/workshop/strategy" local="$PROJECT_DIR$" web="/" />
+            <mapping deploy="/workshop/strategy" local="$PROJECT_DIR$" web="/" />
           </mappings>
         </serverdata>
       </paths>

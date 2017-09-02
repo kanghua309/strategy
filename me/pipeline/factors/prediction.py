@@ -54,7 +54,7 @@ class RNNPredict(CustomFactor):
     inputs = [];
     window_length = 1
     def compute(self, today, assets, out, *inputs):
-        #print "=====",type(today),today,today.weekday()
+        print "=====",type(today),today,today.weekday()
         if (today.weekday() == 4): #每周5计算一次
                 #print "----",today
                 data = today
@@ -80,4 +80,4 @@ class RNNPredict(CustomFactor):
                 conn.close()
         else:
                 #print "+++++++++++++++++++++++++++++++++++++++++++++"
-                out[:] = None
+                out[:] = np.nan
