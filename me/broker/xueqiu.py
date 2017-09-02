@@ -28,7 +28,7 @@ def sell_batch_xq(context,stocks):
     for stock in stocks:
         context.user.adjust_weight(stock, 0.0)
 '''
-class XueqiueLive:
+class XueqiuLive:
 
     def __init__(self,user,account,password,portfolio_code,placeholder = '000001'):
         self.exchange = 'xq'
@@ -45,6 +45,9 @@ class XueqiueLive:
     def adjust_weight(self,stock,weight):
         self.userbroker.adjust_weight(stock, weight)
 
+    def get_placeholder(self):
+        return self.placeholder
+
     def get_profolio_position(self):
         df = pd.DataFrame(self.userbroker.position)
         ds = df['stock_code'].map(lambda x: str(x)[2:])
@@ -55,6 +58,9 @@ class XueqiueLive:
         except:
             pass
         return s
+
+    def get_profilio_size(self):
+        return len(self.userbroker.position)
 
 
     def get_profolio_keep_cost_price(self):
@@ -96,10 +102,10 @@ class XueqiueLive:
             pass
         return s
 if __name__ == '__main__':
-     xqlive = XueqiueLive(user = '',account = '18618280998',password = 'Threeeyear3#',portfolio_code='ZH1140387')
+     xqlive = XueqiuLive(user ='', account ='18618280998', password ='Threeeyear3#', portfolio_code='ZH1140387')
      print xqlive
      xqlive.login()
      s = xqlive.get_profolio_position()
      print s
-     s = xqlive.get_profolio_keep_cost_price()
+     s = xqlive.get_profilio_size()
      print s

@@ -232,13 +232,13 @@ def rebalance(context, data):
     xq_pos = get_xq_pos(context)
     for stock in xq_pos:
         if stock not in xq_new_profolio_dict:
-            print "sell it now ......"
+            print "sell it now ......",stock
             try:
                  context.user.adjust_weight(stock,0)
                  pass
             except easytrader.webtrader.TradeError, e:
-                print "Trader exception %s", e
-                raise SystemExit(-1)
+                print "stock %s trader exception %s" % (stock,e)
+                #raise SystemExit(-1)
 
     print "Rebalance - adjust some then"
     df = pd.DataFrame(data=np.transpose((w.value)), columns=df.index)  # 翻转
@@ -249,8 +249,7 @@ def rebalance(context, data):
             context.user.adjust_weight(c,weight)
             pass
         except easytrader.webtrader.TradeError as e:
-        #except Exception,e:
-            print "Trader exception %s" % e
+            print "stock %s trader exception %s" % (stock, e)
             #raise SystemExit(-1)
 
 
