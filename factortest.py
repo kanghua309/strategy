@@ -55,20 +55,20 @@ import pandas as pd
 from datetime import timedelta, date, datetime
 import easytrader
 
-NUM_ALL_CANDIDATE = 60
+NUM_ALL_CANDIDATE = 20
 
 MAX_GROSS_LEVERAGE = 1.0
-NUM_LONG_POSITIONS  = 20
+NUM_LONG_POSITIONS = 20
 NUM_SHORT_POSITIONS = 0
-MAX_BETA_EXPOSURE = 0.30
+MAX_BETA_EXPOSURE = 0.20
 
 
-MAX_LONG_POSITION_SIZE = 4 * 1.0/(NUM_LONG_POSITIONS + NUM_SHORT_POSITIONS)
+MAX_LONG_POSITION_SIZE = 3 * 1.0/(NUM_LONG_POSITIONS + NUM_SHORT_POSITIONS)
 #MAX_SHORT_POSITION_SIZE = 2*1.0/(NUM_LONG_POSITIONS + NUM_SHORT_POSITIONS)
 
 MIN_LONG_POSITION_SIZE = 0.5 * 1.0/(NUM_LONG_POSITIONS + NUM_SHORT_POSITIONS)
 
-MAX_SECTOR_EXPOSURE = 0.30
+MAX_SECTOR_EXPOSURE = 0.20
 
 risk_benchmark = '000001'
 profolio_size = 19
@@ -99,9 +99,18 @@ def make_pipeline():
     sector = get_sector()
     csreturn = CrossSectionalReturns(window_length=21)
     momentum = Momentum(window_length=21)
+    beta = 0.66 * RollingLinearRegressionOfReturns(
+        target=symbol(risk_benchmark),  # sid(8554),
+        returns_length=6,
+        regression_length=21,
+        # mask=long_short_screen
+        mask=(universe),
+    ).beta + 0.33 * 1.0
+
     combined_rank = (
         momentum.rank(mask=universe).zscore() +
-        csreturn.rank(mask=universe).zscore()
+        csreturn.rank(mask=universe).zscore() +
+        beta.rank(mask=universe,ascending=False).zscore()
     )
     longs =  combined_rank.top(NUM_ALL_CANDIDATE)
     #shorts = combined_rank.bottom(NUM_SHORT_POSITIONS)
@@ -117,13 +126,13 @@ def make_pipeline():
 
     return Pipeline(
         columns={
-            'longs': longs.downsample('week_end'),
+            'longs': longs,
             #'shorts': shorts,
-            'combined_rank': combined_rank.downsample('week_end'),
-            'momentum': momentum.downsample('week_end'),
-            'return' : csreturn.downsample('week_end'),
-            'sector': sector.downsample('week_end'),
-            'market_beta': beta.downsample('week_end'),
+            'combined_rank': combined_rank,
+            'momentum': momentum,
+            'return' : csreturn,
+            'sector': sector.downsample('week_start'),
+            'market_beta': beta,
         },
         screen=long_short_screen,
     )
@@ -145,18 +154,20 @@ def rebalance(context, data):
 
     weights = optimalize(context,pipeline_data.index)
     print "Rebalance optimalize weights %s" % weights
+    assert not weights.empty
+
 
     xq_pos = context.xueqiuLive.get_profolio_position()
     for stock in xq_pos:
-        if stock not in pipeline_data.indext:
-            print "sell it now ......"
+        if stock not in pipeline_data.index:
+            print "sell it now ......",stock
             try:
                 # context.user.adjust_weight(stock, 0)
                 pass
             except easytrader.webtrader.TradeError, e:
                 print "stock %s trader exception %s" % (stock, e)
                 #raise SystemExit(-1)
-    for stock,weight in weights:
+    for stock,weight in weights.iteritems():
         #weight = df.at[0, c] * 100
         print "stock %s set weight %s" % (stock, weight)
         try:
@@ -192,10 +203,10 @@ def optimalize(context,mask):
     prob.solve()
     if prob.status != 'optimal':
         print "Optimal failed %s , do nothing" % prob.status
-        return
+        return pd.Series()
         # raise SystemExit(-1)
     print np.squeeze(np.asarray(w.value))  # Remove single-dimensional entries from the shape of an array
-    return pd.DataFrame(data=np.transpose((w.value)), index=data.index)
+    return pd.Series(data=np.squeeze(np.asarray(w.value)), index=mask)
 
 
 def initialize(context):
