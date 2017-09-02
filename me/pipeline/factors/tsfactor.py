@@ -99,17 +99,18 @@ def Fundamental():
     return Fundamental()
 
 
-def default_china_equity_universe_mask():
+def default_china_equity_universe_mask(unmask):
     #a_stocks = []
     info = load_tushare_df("basic")
     sme = load_tushare_df("sme")
     gem = load_tushare_df("gem")
     st  = load_tushare_df("st")
     uset = pd.concat([sme, gem, st])
-    maskset = info.drop([y for y in uset['code']], axis=0).index  # st,sme,gem 的都不要，稳健型只要主板股票
+    maskdf  = info.drop([y for y in uset['code']], axis=0)  # st,sme,gem 的都不要，稳健型只要主板股票
+    maskdf = maskdf.drop(unmask,axis=0)
     #Returns a factor indicating membership (=1) in the given iterable of securities
     #print("==enter IsInSymbolsList==")
-    class IsInSecListFactor(CustomFilter):
+    class IsInDefaultChinaUniverse(CustomFilter):
         inputs = [];
         window_length = 1
         def compute(self, today, asset_ids, out, *inputs):
@@ -118,6 +119,6 @@ def default_china_equity_universe_mask():
             assets  = [sid(id).symbol for id in asset_ids]
             #print "--------------"
             #print pd.Series(assets)
-            out[:] = pd.Series(assets).isin(maskset)
+            out[:] = pd.Series(assets).isin(maskdf.index)
             #print out
-    return IsInSecListFactor()
+    return IsInDefaultChinaUniverse()

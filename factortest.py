@@ -58,7 +58,7 @@ import easytrader
 NUM_ALL_CANDIDATE = 20
 
 MAX_GROSS_LEVERAGE = 1.0
-NUM_LONG_POSITIONS = 20
+NUM_LONG_POSITIONS = 19 #剔除risk_benchmark
 NUM_SHORT_POSITIONS = 0
 MAX_BETA_EXPOSURE = 0.20
 
@@ -76,7 +76,7 @@ def make_pipeline():
 
     universe = make_china_equity_universe(
         target_size = 2000,
-        mask = default_china_equity_universe_mask(),
+        mask = default_china_equity_universe_mask([risk_benchmark]),
         max_group_weight= 0.01,
         smoothing_func = lambda f: f.downsample('month_start'),
 
@@ -170,6 +170,8 @@ def rebalance(context, data):
     for stock,weight in weights.iteritems():
         #weight = df.at[0, c] * 100
         print "stock %s set weight %s" % (stock, weight)
+        if stock == context.xueqiuLive.get_placeholder():
+            continue #TODO
         try:
             #context.user.adjust_weight(stock, weight)
             pass
