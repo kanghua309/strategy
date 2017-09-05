@@ -60,7 +60,7 @@ class XueqiuLive:
         return s
 
     def get_profilio_size(self):
-        return len(self.userbroker.position)
+        return len(self.userbroker.position) - 1
 
 
     def get_profolio_keep_cost_price(self):

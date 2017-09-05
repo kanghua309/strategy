@@ -6,8 +6,6 @@ Created on Wed May 17 16:01:42 2017
 """
 
 
-
-
 from zipline.api import (
     symbol,
     get_datetime,
@@ -18,31 +16,31 @@ class PortfolioManager:
     class BlackListManager:
          def __init__(self,expire):
              self.expire = expire #datetime.timedelta(hours=10)
-             self.blist = [];
+             self.black_list = [];
          def addEquite(self,sym,dt):  #检查超时，自动移除
-             self.blist.insert(0,(sym,dt))
-             for i in range(len(self.blist) -1,-1,-1):
-                 odt = self.blist[i][1]
+             self.black_list.insert(0, (sym, dt))
+             for i in range(len(self.black_list) -1, -1, -1):
+                 odt = self.black_list[i][1]
                  #print("debug print:",dt,odt,(dt - odt).days)
                  if (dt - odt).days > self.expire: 
-                     self.blist.pop(i)
+                     self.black_list.pop(i)
                  else:
                      break
     
          def isExist(self,sym,dt):
              #print("-------blacklist:",self.blist)
-             for i in range(len(self.blist) -1,-1,-1):
-                 odt = self.blist[i][1]
+             for i in range(len(self.black_list) -1, -1, -1):
+                 odt = self.black_list[i][1]
                  #print("debug print:",dt,odt,(dt - odt).days)
                  if (dt - odt).days > self.expire: 
-                     self.blist.pop(i)
+                     self.black_list.pop(i)
                  else:
                      break
              #print("debug print ------------BlackListManager isExist",sym,self.blist)
-             return True if sym in self.blist else False
+             return True if sym in self.black_list else False
               
          def getEquiteCount(self):
-             return len(self.blist)
+             return len(self.black_list)
          
          def getExpireTime(self):
              return len(self.expire)
