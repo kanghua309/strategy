@@ -11,7 +11,7 @@ from zipline.pipeline.factors import CustomFactor
 #from me.pipeline.utils import tushare_loader as tu
 from me.pipeline.utils.meta import load_tushare_df
 
-Sector_TOPN = 95
+Sector_TOPN = 80 #TODO
 
 def get_sector_size():
     return len(get_sector_class())

@@ -6,6 +6,7 @@ import numpy as np
 # import pandas.io.data as web
 import pandas_datareader.data as web
 # from  pandas.stats.api import ols
+from datetime import timedelta, date, datetime
 import pandas as pd
 import easytrader
 
@@ -62,9 +63,7 @@ class XueqiuLive:
     def get_profilio_size(self):
         return len(self.userbroker.position) - 1
 
-
-    def get_profolio_keep_cost_price(self):
-        # print xq_user.position
+    def _get_profolio_history(self):
         df = pd.DataFrame(self.userbroker.history)
         df = df[df['status'] == 'success']['rebalancing_histories']
         # print "*****************************"
@@ -76,9 +75,11 @@ class XueqiuLive:
             return pd.Series()
         histdf = pd.concat(_list)
         histdf = histdf.fillna(0)
-        # print histdf.iloc[::-1]
-        # print "-------------------"
-        # print histdf.shape
+        return histdf
+
+    def get_profolio_keep_cost_price(self):
+        # print xq_user.position
+        histdf = self._get_profolio_history()
         tmpdict = {}
         ind = 0
         for _, row in histdf.iloc[::-1].iterrows():  # 获取每行的index、row
@@ -94,6 +95,30 @@ class XueqiuLive:
                 keep_price = row['prev_price']
             net = row['volume'] - row['prev_volume']
             tmpdict[stock] = (net * row['price'] + row['prev_volume'] * keep_price) / row['volume']
+        s = pd.Series(tmpdict)
+        try:
+            s = s.drop(self.placeholder)
+        except:
+            pass
+        return s
+
+
+    def get_profolio_last_trade_day(self):
+        histdf = self._get_profolio_history()
+        tmpdict = {}
+        ind = 0
+        for _, row in histdf.iloc[::-1].iterrows():  # 获取每行的index、row
+            # print type(row), row, type(row['stock_symbol']), str(row['stock_symbol'])[2:]
+            stock = str(row['stock_symbol'])[2:]
+            if row['volume'] == 0:
+                if tmpdict.has_key(stock): del tmpdict[stock]
+                continue
+            ind += 1
+            if tmpdict.has_key(stock):
+                continue
+            else:
+                lasttime = datetime.utcfromtimestamp(row['created_at']/1000)
+            tmpdict[stock] = lasttime
 
         s = pd.Series(tmpdict)
         try:
@@ -101,6 +126,7 @@ class XueqiuLive:
         except:
             pass
         return s
+
 if __name__ == '__main__':
      xqlive = XueqiuLive(user ='', account ='18618280998', password ='Threeeyear3#', portfolio_code='ZH1140387')
      print xqlive

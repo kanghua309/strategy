@@ -7,8 +7,7 @@ Created on Sat Apr 15 10:52:27 2017
 
 from zipline import TradingAlgorithm
 
-from me.pipeline.filters.universe import make_china_equity_universe
-from me.pipeline.factors.tsfactor import default_china_equity_universe_mask
+from me.pipeline.filters.universe import make_china_equity_universe,default_china_equity_universe_mask,private_universe_mask
 
 
 
@@ -25,7 +24,7 @@ from zipline.api import (
     get_datetime,
 )
 
-from me.pipeline.factors.tsfactor import default_china_equity_universe_mask
+
 from me.pipeline.factors.boost import Momentum,CrossSectionalReturns
 
 from zipline.pipeline import Pipeline
@@ -59,7 +58,7 @@ NUM_ALL_CANDIDATE = NUM_LONG_POSITIONS
 
 
 
-MAX_LONG_POSITION_SIZE = 3 * 1.0/(NUM_LONG_POSITIONS + NUM_SHORT_POSITIONS)
+MAX_LONG_POSITION_SIZE = 2 * 1.0/(NUM_LONG_POSITIONS + NUM_SHORT_POSITIONS)
 #MAX_SHORT_POSITION_SIZE = 2*1.0/(NUM_LONG_POSITIONS + NUM_SHORT_POSITIONS)
 
 MIN_LONG_POSITION_SIZE = 0.5 * 1.0/(NUM_LONG_POSITIONS + NUM_SHORT_POSITIONS)
@@ -71,7 +70,7 @@ risk_benchmark = '000001'
 
 from me.manager.portfolio import PortfolioManager
 
-def make_pipeline():
+def make_pipeline(context):
 
     universe = make_china_equity_universe(
         target_size = 2000,
@@ -81,18 +80,22 @@ def make_pipeline():
 
     )
     last_price = USEquityPricing.close.latest >= 1.0
-    universe = universe & last_price
+
+    positions = context.xueqiuLive.get_profolio_position()
+    #print positions
+    private_universe = private_universe_mask(positions.index)
+    universe = universe & last_price | private_universe
 
     hurst = HurstExp(window_length = int(252*0.25),mask=universe)
     # tradeable_pipe.add(HurstExp().rank(),"hurst_rank")
 
     '''
-    top  = combined_rank.top(10)
-    bottom  = combined_rank.bottom(10)
+    top  = combined_rank.top(50)
+    bottom  = combined_rank.bottom(50)
     '''
     top = hurst >= 0.8
     bottom = hurst <= 0.2
-    universe = (top | bottom)
+    universe = (top | bottom) | private_universe
     combined_rank = (
         hurst.rank(mask=universe)
     )
@@ -129,13 +132,35 @@ def _check_stop_limit(context,data,profolio):
         keep_price = profolio[index]
         current_price = data.current(symbol(index), 'price')
         #print "Rebalance - index, keep_price, current_price"
-        if keep_price / current_price > 1.15:
+        if keep_price / current_price > 1.10:
             print "%s has down to stop limit, sell it - for %s,%s " % (index,keep_price,current_price)
-            stop_dict[index] = True
+            stop_dict[index] = 0.0
         if keep_price / current_price < 0.90:
             print "%s has up to expected price , sell it - for %s,%s" % (index,keep_price,current_price)
-            stop_dict[index] = True
+            stop_dict[index] = 0.0
+
     return stop_dict
+
+from datetime import timedelta,datetime
+def _check_expired_limit(context, data, profolio):
+    stop_dict = {}
+    for index, value in profolio.iteritems():
+        if False == data.can_trade(symbol(index)):
+            continue
+        lastdt = profolio[index]
+        # print "Rebalance - index, keep_price, current_price"
+        if datetime.now() - lastdt >  timedelta(weeks=2):
+            print "%s has expired , sell it - for %s,%s" % (index,datetime.now(),lastdt)
+            stop_dict[index] = 0.0
+    return stop_dict
+
+
+def _adjust_stocks(context,stocks):
+    for stock, weight in stocks.iteritems():
+        try:
+            context.xueqiuLive.adjust_weight(stock,weight)
+        except:
+            pass
 
 def rebalance(context, data):
     if (context.sim_params.end_session - get_datetime() > timedelta(days=6)):  # 只在最后一个周末;周5运行
@@ -146,16 +171,21 @@ def rebalance(context, data):
     print pipeline_data.head(70)
     print "---------------------------------"
     #print pipeline_data.loc['000018']
-    context.xueqiuLive.login()
+    #context.xueqiuLive.login()
     xq_profolio = context.xueqiuLive.get_profolio_keep_cost_price()
     print "Rebalance - Current xq profolio"
     print len(xq_profolio), xq_profolio
     remove_dict = _check_stop_limit(context,data,xq_profolio)
-    print "remove_stock:",remove_dict
+    print "remove_stock for stop:",remove_dict
+    _remove = _check_expired_limit(context,data,context.xueqiuLive.get_profolio_last_trade_day())
+    remove_dict.update(_remove) #TODO
+    print "remove_stock for expire:",remove_dict
+
     profolio_hold_index = xq_profolio.index.difference(remove_dict)
-    print  profolio_hold_index
     print "-----------------------------------sell first------------------------------------------",pipeline_data.ix[profolio_hold_index]
     for index,row in pipeline_data.ix[profolio_hold_index].iterrows():  #应该有很hold里的在data中找不到，没关系，忽略之
+        if False == data.can_trade(symbol(index)):
+            continue
         hurst = row.hurst
         vbeta = row.volume_pct_beta
         pbeta = row.price_pct_beta
@@ -163,33 +193,43 @@ def rebalance(context, data):
             # print("info  sym(%s) is mean revert"%sym)
             if  vbeta > 0 and vbeta < pbeta:
                 print("++++++++++++++++++++++++++Info sell sym(%s) for mean revert at all" % index)
-                remove_dict[index] = True
-        if hurst >= 0.8:
+                remove_dict[index] = 0.0
+        if  hurst >= 0.8:
             # print("info sym(%s) is moment trend"%sym)
             if vbeta < 0 and vbeta > pbeta:
                 print("++++++++++++++++++++++++++Info sell sym(%s) for momentum trend at all" % index)
-                remove_dict[index] = True
+                remove_dict[index] = 0.0
 
     profolio_hold_index = profolio_hold_index.difference(remove_dict)
     pools = pipeline_data.index.difference(xq_profolio.index)
-    print "profolio_hold_index:", profolio_hold_index
-    print "-----------------------------------buy last------------------------------------------",pools
+    print "profolio_hold_index before buy:", profolio_hold_index
+    print "-----------------------------------buy last------------------------------------------"
     for index,row in pipeline_data.ix[pools].iterrows():
+        if False == data.can_trade(symbol(index)):
+            continue
         hurst = row.hurst
         vbeta = row.volume_pct_beta
         pbeta = row.price_pct_beta
         if hurst <= 0.2:
-            if vbeta < 0 and vbeta < pbeta:
+            if vbeta < 0 and vbeta < pbeta:  #先买均值回归的！ 安全！！！
                 print("==========================Info buy sym(%s) for mean revert" % (index))
-                profolio_hold_index = profolio_hold_index.insert(-1,index)
+                profolio_hold_index = profolio_hold_index.insert(0,index)
         if hurst >= 0.8:
             if vbeta > 0 and vbeta > pbeta:
                 print("==========================Info buy sym(%s) for momentum trend" % (index))
-                profolio_hold_index = profolio_hold_index.insert(-1,index)
-        print "profolio_hold_index:",profolio_hold_index
-
+                profolio_hold_index = profolio_hold_index.insert(0,index)
+        if len(profolio_hold_index) == NUM_LONG_POSITIONS:
+            break
+        #print "profolio_hold_index:",profolio_hold_index
+    print "profolio_hold_index after buy:",profolio_hold_index,len(profolio_hold_index)
     weights = optimalize(context,profolio_hold_index)
+    print "profolio weights:", weights
 
+
+    print "do sell ....."
+    _adjust_stocks(context,remove_dict)
+    print "do buy ....."
+    _adjust_stocks(context,weights)
     pass
 
 def optimalize(context,mask):
@@ -201,7 +241,7 @@ def optimalize(context,mask):
     import cvxpy as cvx
     w = cvx.Variable(len(todays_universe))
     # objective = cvx.Maximize(df.pred.as_matrix() * w)  # mini????
-    objective = cvx.Maximize(data.rank.as_matrix() * w)
+    objective = cvx.Maximize(data.market_beta.as_matrix() * w)
     constraints = [cvx.sum_entries(w) == 1.0 * MAX_GROSS_LEVERAGE, w >= 0.0]  # dollar-neutral long/short
     # constraints.append(cvx.sum_entries(cvx.abs(w)) <= 1)  # leverage constraint
     constraints.extend([w >= MIN_LONG_POSITION_SIZE, w <= MAX_LONG_POSITION_SIZE])  # long exposure
@@ -221,15 +261,16 @@ def optimalize(context,mask):
 
 
 def initialize(context):
-    attach_pipeline(make_pipeline(), 'my_pipeline')
+    context.xueqiuLive = XueqiuLive(user='', account='18618280998', password='Threeeyear3#',
+                                    portfolio_code='ZH1124287')  # 巴颜喀拉山
+    context.xueqiuLive.login()
+    attach_pipeline(make_pipeline(context), 'my_pipeline')
     schedule_function(rebalance,date_rules.week_end(days_offset=0), half_days=True)  # 周天 ? 周5 ！！！
     # record my portfolio variables at the end of day
     schedule_function(func=recording_statements,
                       date_rule=date_rules.every_day(),
                       time_rule=time_rules.market_close(),
                       half_days=True)
-
-    context.xueqiuLive = XueqiuLive(user = '',account = '18618280998',password = 'Threeeyear3#',portfolio_code='ZH1140390') #巴颜喀拉山
     pass
 
 def handle_data(context, data):

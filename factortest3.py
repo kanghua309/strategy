@@ -7,8 +7,7 @@ Created on Sat Apr 15 10:52:27 2017
 
 from zipline import TradingAlgorithm
 
-from me.pipeline.filters.universe import make_china_equity_universe
-from me.pipeline.factors.tsfactor import default_china_equity_universe_mask
+from me.pipeline.filters.universe import make_china_equity_universe,default_china_equity_universe_mask
 
 
 
@@ -25,7 +24,6 @@ from zipline.api import (
     get_datetime,
 )
 
-from me.pipeline.factors.tsfactor import default_china_equity_universe_mask
 from me.pipeline.factors.boost import Momentum,CrossSectionalReturns
 
 from zipline.pipeline import Pipeline

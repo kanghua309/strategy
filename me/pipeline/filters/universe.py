@@ -9,12 +9,19 @@ import numpy as np
 import math
 
 
-
+import zipline
+from zipline.api import (
+    symbol,
+    sid,
+)
 from zipline.pipeline.factors import AverageDollarVolume
 
 from me.pipeline.factors.tsfactor import Fundamental
 from me.pipeline.factors.boost import ADV_adj
 from me.pipeline.classifiers.tushare.sector import get_sector,get_sector_size,get_sector_class
+from zipline.pipeline.filters import CustomFilter
+
+from me.pipeline.utils.meta import load_tushare_df
 
 MARKET_CAP_DOWNLIMIT = 5.0e+9
 ADV_ADJ_DOWNLIMIT = 1.0e+8
@@ -157,10 +164,6 @@ def sector_filter(tradeable_count,sector_exposure_limit,smoothing_func = None):
     aircraft_manufacturing_trim = AverageDollarVolume(window_length=21).top(threshold, mask=sector_factor.eq(industry_class['飞机制造'.decode("UTF-8")]))
     food_industry_trim = AverageDollarVolume(window_length=21).downsample('month_start').top(threshold, mask=sector_factor.eq(industry_class['食品行业'.decode("UTF-8")]))             #
 
-    print "---------------------------------"
-    print food_industry_trim
-    print "---------------------------------"
-    
     return transport_trim|media_entertainment_trim|\
            chemical_trim|medical_device_trim|\
            power_plant_trim|business_department_trim|appliance_trim|\
@@ -173,6 +176,47 @@ def sector_filter(tradeable_count,sector_exposure_limit,smoothing_func = None):
            aircraft_manufacturing_trim|food_industry_trim
     '''
     return filters
+
+
+def default_china_equity_universe_mask(unmask):
+    #a_stocks = []
+    info = load_tushare_df("basic")
+    sme =  load_tushare_df("sme")
+    gem =  load_tushare_df("gem")
+    st  =  load_tushare_df("st")
+    uset = pd.concat([sme, gem, st])
+    maskdf  = info.drop([y for y in uset['code']], axis=0)  # st,sme,gem 的都不要，稳健型只要主板股票
+    maskdf = maskdf.drop(unmask,axis=0)
+    #Returns a factor indicating membership (=1) in the given iterable of securities
+    #print("==enter IsInSymbolsList==")
+    class IsInDefaultChinaUniverse(CustomFilter):
+        inputs = [];
+        window_length = 1
+        def compute(self, today, asset_ids, out, *inputs):
+            #print asset_ids
+            #print maskset
+            assets  = [sid(id).symbol for id in asset_ids]
+            #print "--------------"
+            #print pd.Series(assets)
+            out[:] = pd.Series(assets).isin(maskdf.index)
+            #print out
+    return IsInDefaultChinaUniverse()
+
+def private_universe_mask(mask):
+    mask = mask
+    class IsInPrivateUniverse(CustomFilter):
+        inputs = [];
+        window_length = 1
+        def compute(self, today, asset_ids, out, *inputs):
+            #print asset_ids
+            #print maskset
+            assets  = [sid(id).symbol for id in asset_ids]
+            #print "--------------"
+            #print pd.Series(assets)
+            out[:] = pd.Series(assets).isin(mask)
+            #print out
+    return IsInPrivateUniverse()
+
 
 def make_china_equity_universe(
         target_size,

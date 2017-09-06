@@ -13,7 +13,6 @@ from zipline.api import (
 import datetime
 from zipline.pipeline.data import USEquityPricing
 from zipline.pipeline.factors import AverageDollarVolume, CustomFactor
-from zipline.pipeline.filters import CustomFilter
 
 
 from me.pipeline.utils.meta import load_tushare_df
@@ -98,7 +97,7 @@ def Fundamental():
 
     return Fundamental()
 
-
+'''
 def default_china_equity_universe_mask(unmask):
     #a_stocks = []
     info = load_tushare_df("basic")
@@ -122,3 +121,4 @@ def default_china_equity_universe_mask(unmask):
             out[:] = pd.Series(assets).isin(maskdf.index)
             #print out
     return IsInDefaultChinaUniverse()
+'''
