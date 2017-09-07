@@ -81,7 +81,7 @@ def make_pipeline(context):
     )
     last_price = USEquityPricing.close.latest >= 1.0
 
-    positions = context.xueqiuLive.get_profolio_position()
+    positions = context.xueqiuLive.get_profolio_position() #TODO
     #print positions
     private_universe = private_universe_mask(positions.index)
     universe = universe & last_price | private_universe
@@ -174,17 +174,24 @@ def rebalance(context, data):
     xq_profolio = context.xueqiuLive.get_profolio_info()
     print "Rebalance - Current xq profolio"
     print len(xq_profolio), xq_profolio
-    remove_dict = _check_stop_limit(context,data,xq_profolio.keep_price)
+
+    xq_profolio_real = xq_profolio[xq_profolio['short_time'].isnull()]
+    remove_dict = _check_stop_limit(context,data,xq_profolio_real.keep_price)
     print "remove_stock for stop:",remove_dict
-    _remove     = _check_expired_limit(context,data,xq_profolio.long_time)
+    _remove     = _check_expired_limit(context,data,xq_profolio_real.long_time)
     remove_dict.update(_remove) #TODO
     print "remove_stock for expire:",remove_dict
 
-    profolio_hold_index = xq_profolio.index.difference(remove_dict)
+    profolio_hold_index = xq_profolio_real.index.difference(remove_dict)
     print "-----------------------------------sell first------------------------------------------",pipeline_data.ix[profolio_hold_index]
     for index,row in pipeline_data.ix[profolio_hold_index].iterrows():  #应该有很hold里的在data中找不到，没关系，忽略之
-        if False == data.can_trade(symbol(index)):
+        try:
+            if False == data.can_trade(symbol(index)):
+                continue
+        except:  #TODO index 有可能symbol报错
+            print "index not exit .........."
             continue
+            pass
         hurst = row.hurst
         vbeta = row.volume_pct_beta
         pbeta = row.price_pct_beta
@@ -200,7 +207,7 @@ def rebalance(context, data):
                 remove_dict[index] = 0.0
 
     profolio_hold_index = profolio_hold_index.difference(remove_dict)
-    pools = pipeline_data.index.difference(xq_profolio.index)
+    pools = pipeline_data.index.difference(xq_profolio_real.index)
     print "profolio_hold_index before buy:", profolio_hold_index
     print "-----------------------------------buy last------------------------------------------"
     for index,row in pipeline_data.ix[pools].iterrows():
