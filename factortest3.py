@@ -219,7 +219,7 @@ def initialize(context):
                       time_rule=time_rules.market_close(),
                       half_days=True)
 
-    context.xueqiuLive = XueqiuLive(user = '',account = '18618280998',password = 'Threeeyear3#',portfolio_code='ZH1140390') #巴颜喀拉山
+    context.xueqiuLive = XueqiuLive(user = '',account = '18618280998',password = 'Threyear#3',portfolio_code='ZH1140390') #巴颜喀拉山
 
 
     pass

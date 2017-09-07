@@ -51,7 +51,7 @@ profolio_size = 19  ##FIX  IT
 exchange = 'xq'
 user = ''
 account = '18618280998'
-password = 'Threeeyear3#'
+password = 'Threyear#3'
 portfolio_code='ZH1140387'
 #portfolio_code='ZH135253'
 

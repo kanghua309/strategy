@@ -158,7 +158,7 @@ def _check_expired_limit(context, data, profolio):
 def _adjust_stocks(context,stocks):
     for stock, weight in stocks.iteritems():
         try:
-            context.xueqiuLive.adjust_weight(stock,weight)
+            context.xueqiuLive.adjust_weight(stock,weight * 100)
         except:
             pass
 
@@ -168,16 +168,15 @@ def rebalance(context, data):
     pipeline_data = context.pipeline_data
     pipeline_data.index = [index.symbol for index in pipeline_data.index]
     print "pipeline_data", len(pipeline_data)
-    print pipeline_data.head(70)
     print "---------------------------------"
     #print pipeline_data.loc['000018']
     #context.xueqiuLive.login()
-    xq_profolio = context.xueqiuLive.get_profolio_keep_cost_price()
+    xq_profolio = context.xueqiuLive.get_profolio_info()
     print "Rebalance - Current xq profolio"
     print len(xq_profolio), xq_profolio
-    remove_dict = _check_stop_limit(context,data,xq_profolio)
+    remove_dict = _check_stop_limit(context,data,xq_profolio.keep_price)
     print "remove_stock for stop:",remove_dict
-    _remove = _check_expired_limit(context,data,context.xueqiuLive.get_profolio_last_trade_day())
+    _remove     = _check_expired_limit(context,data,xq_profolio.long_time)
     remove_dict.update(_remove) #TODO
     print "remove_stock for expire:",remove_dict
 
@@ -227,9 +226,9 @@ def rebalance(context, data):
 
 
     print "do sell ....."
-    _adjust_stocks(context,remove_dict)
+    #_adjust_stocks(context,remove_dict)
     print "do buy ....."
-    _adjust_stocks(context,weights)
+    #_adjust_stocks(context,weights)
     pass
 
 def optimalize(context,mask):
@@ -261,7 +260,7 @@ def optimalize(context,mask):
 
 
 def initialize(context):
-    context.xueqiuLive = XueqiuLive(user='', account='18618280998', password='Threeeyear3#',
+    context.xueqiuLive = XueqiuLive(user='', account='18618280998', password='Threyear#3',
                                     portfolio_code='ZH1124287')  # 巴颜喀拉山
     context.xueqiuLive.login()
     attach_pipeline(make_pipeline(context), 'my_pipeline')

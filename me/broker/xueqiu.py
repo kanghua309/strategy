@@ -127,6 +127,38 @@ class XueqiuLive:
             pass
         return s
 
+    def get_profolio_info(self):
+        histdf = self._get_profolio_history()
+        tmpdict = {}
+        tmpdict['keep_price'] = {}
+        tmpdict['short_time'] = {}
+        tmpdict['long_time'] = {}
+        for _, row in histdf.iterrows():  # 获取每行的index、row
+            print type(row), row, type(row['stock_symbol']), str(row['stock_symbol'])[2:]
+            stock = str(row['stock_symbol'])[2:]
+            if row['volume'] == 0:  # 股票被卖
+                if stock not in tmpdict['short_time']:  # 只关心最后一次卖出时间
+                    tmpdict['short_time'][stock] = datetime.utcfromtimestamp(row['created_at'] / 1000)
+            else:
+                if stock not in tmpdict['long_time']:  # 只关心最后一次买入
+                    tmpdict['long_time'][stock] = datetime.utcfromtimestamp(row['created_at'] / 1000)
+            if tmpdict['keep_price'].has_key(stock):
+                keep_price = tmpdict['keep_price'][stock]  # 更新最早价格
+            else:
+                keep_price = row['prev_price']
+            net = row['volume'] - row['prev_volume']  # 更新最早价格
+            if row['volume'] != 0:
+                tmpdict['keep_price'][stock] = (net * row['price'] + row['prev_volume'] * keep_price) / row[
+                    'volume']  # 不断更新
+        s = pd.DataFrame(tmpdict)
+        try:
+            s = s.drop(self.placeholder)
+        except:
+            pass
+        return s
+
+
+
 if __name__ == '__main__':
      xqlive = XueqiuLive(user ='', account ='18618280998', password ='Threeeyear3#', portfolio_code='ZH1140387')
      print xqlive
