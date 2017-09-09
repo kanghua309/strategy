@@ -18,7 +18,7 @@ from zipline.pipeline.factors import AverageDollarVolume
 
 from me.pipeline.factors.tsfactor import Fundamental
 from me.pipeline.factors.boost import ADV_adj
-from me.pipeline.classifiers.tushare.sector import get_sector,get_sector_size,get_sector_class
+from me.pipeline.classifiers.tushare.sector import get_sector,get_sector_class
 from zipline.pipeline.filters import CustomFilter
 
 from me.pipeline.utils.meta import load_tushare_df
@@ -90,7 +90,7 @@ def sector_filter(tradeable_count,sector_exposure_limit,smoothing_func = None):
     #print("g_inds",g_inds)
     sector_factor = get_sector(industry_class)
     # set thresholds
-    sector_size = get_sector_size()
+    sector_size = len(industry_class)
     if sector_exposure_limit < ((1. / sector_size)):
         threshold = int(math.ceil((1. /sector_size) * tradeable_count))
     elif sector_exposure_limit > 1.:

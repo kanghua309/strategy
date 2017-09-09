@@ -134,7 +134,7 @@ class XueqiuLive:
         tmpdict['short_time'] = {}
         tmpdict['long_time'] = {}
         for _, row in histdf.iterrows():  # 获取每行的index、row
-            print type(row), row, type(row['stock_symbol']), str(row['stock_symbol'])[2:]
+            #print type(row), row, type(row['stock_symbol']), str(row['stock_symbol'])[2:]
             stock = str(row['stock_symbol'])[2:]
             if row['volume'] == 0:  # 股票被卖
                 if stock not in tmpdict['short_time']:  # 只关心最后一次卖出时间

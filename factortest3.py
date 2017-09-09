@@ -34,7 +34,7 @@ from zipline.pipeline.data import DataSet
 from zipline.pipeline.engine import SimplePipelineEngine
 from zipline.pipeline.loaders.frame import DataFrameLoader
 from zipline.pipeline.factors import AverageDollarVolume, CustomFactor, Latest ,RollingLinearRegressionOfReturns
-from me.pipeline.classifiers.tushare.sector import get_sector,get_sector_size,get_sector_class
+from me.pipeline.classifiers.tushare.sector import get_sector,get_sector_class
 #from me.broker.xuqie.XueqiueLive import login,adjust_weight,get_profolio_position,get_profilio_size,get_profolio_keep_cost_price
 from me.broker.xueqiu import XueqiuLive
 
