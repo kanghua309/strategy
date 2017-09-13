@@ -167,3 +167,5 @@ if __name__ == '__main__':
      print s
      s = xqlive.get_profilio_size()
      print s
+     s = xqlive.get_profolio_info()
+     print s

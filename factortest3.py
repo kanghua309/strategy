@@ -5,54 +5,45 @@ Created on Sat Apr 15 10:52:27 2017
 @author: kang
 """
 
-from zipline import TradingAlgorithm
+from zipline.pipeline.factors import RollingLinearRegressionOfReturns
+from me.pipeline.classifiers.tushare.sector import get_sector
+#from me.broker.xuqie.XueqiueLive import login,adjust_weight,get_profolio_position,get_profilio_size,get_profolio_keep_cost_price
+from me.grocery.broker.xueqiu import XueqiuLive
 
-from me.pipeline.filters.universe import make_china_equity_universe,default_china_equity_universe_mask
+import numpy as np
+#import pandas.io.data as web
+#from   pandas.stats.api import ols
+#import math
+#import pytz
+from datetime import timedelta
+# import math
+# import pytz
+from datetime import timedelta
 
-
-
+import easytrader
+import numpy as np
+# import pandas.io.data as web
+# from   pandas.stats.api import ols
+import pandas as pd
 from zipline.api import (
     attach_pipeline,
     date_rules,
     time_rules,
-    order_target_percent,
     pipeline_output,
     record,
     schedule_function,
     symbol,
-    sid,
     get_datetime,
 )
-
-from me.pipeline.factors.boost import Momentum,CrossSectionalReturns
-
 from zipline.pipeline import Pipeline
-from zipline.pipeline.factors import RSI
 from zipline.pipeline.data import USEquityPricing
-from zipline.pipeline.data import Column
-from zipline.pipeline.data import DataSet
-from zipline.pipeline.engine import SimplePipelineEngine
-from zipline.pipeline.loaders.frame import DataFrameLoader
-from zipline.pipeline.factors import AverageDollarVolume, CustomFactor, Latest ,RollingLinearRegressionOfReturns
-from me.pipeline.classifiers.tushare.sector import get_sector,get_sector_class
-#from me.broker.xuqie.XueqiueLive import login,adjust_weight,get_profolio_position,get_profilio_size,get_profolio_keep_cost_price
-from me.broker.xueqiu import XueqiuLive
+from zipline.pipeline.factors import RollingLinearRegressionOfReturns
 
-
-from me.pipeline.factors.tsfactor import Fundamental
-
-
-from   itertools import chain
-import numpy as np
-#import pandas.io.data as web
-import pandas_datareader.data as web
-#from   pandas.stats.api import ols
-import pandas as pd
-#import math
-#import pytz
-from datetime import timedelta, date, datetime
-import easytrader
-
+# from me.broker.xuqie.XueqiueLive import login,adjust_weight,get_profolio_position,get_profilio_size,get_profolio_keep_cost_price
+from me.grocery.broker.xueqiu import XueqiuLive
+from me.pipeline.classifiers.tushare.sector import get_sector
+from me.pipeline.factors.boost import Momentum, CrossSectionalReturns
+from me.pipeline.filters.universe import make_china_equity_universe, default_china_equity_universe_mask
 
 MAX_GROSS_LEVERAGE = 1.0
 NUM_LONG_POSITIONS = 19 #剔除risk_benchmark
