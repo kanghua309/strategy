@@ -37,7 +37,7 @@ class BasicHedgeRiskManager(RiskManager):
         candidates_len = candidates.index
         w = cvx.Variable(len(candidates_len))
         # objective = cvx.Maximize(df.pred.as_matrix() * w)  # mini????
-        objective = cvx.Maximize(candidates[factors.BETA].as_matrix() * w)           #FIX IT
+        objective = cvx.Maximize(candidates[factors['BETA']].as_matrix() * w)           #FIX IT
         constraints = [cvx.sum_entries(w) == 1.0 * MAX_GROSS_LEVERAGE, w >= 0.0]  # dollar-neutral long/short
         # constraints.append(cvx.sum_entries(cvx.abs(w)) <= 1)  # leverage constraint
         constraints.extend([w >= MIN_LONG_POSITION_SIZE, w <= MAX_LONG_POSITION_SIZE])  # long exposure
