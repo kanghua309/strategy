@@ -23,6 +23,8 @@ MAX_SECTOR_EXPOSURE = 0.40
 class BasicHedgeRiskManager(RiskManager):
     def __init__(self):
         pass
+
+    #@staticmethod #?
     def optimalize(self,data):
 
         print data.index

@@ -7,14 +7,15 @@ positions held by it.
 class Strategy(object):
     def __init__(self, executor = None, risk_manager = None ):
         #requests allocation and assigns to an empty dictionary
-        self.alloc = dict()
+        #self.alloc = dict()
         #records positions associated with strategy and assigns to an empty dictionary
-        self.pos = dict()
+        #self.pos = dict()
+        pass
     def compute_allocation(self,dataframe):
         pass
         raise NotImplementedError()
 
-    def trade(self,dataframe = None):
+    def trade(self,shorts,longs):
         raise NotImplementedError()
 
     def portfolio(self):

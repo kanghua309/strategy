@@ -20,5 +20,4 @@ class Executor(object):
         pass
 
     def portofolio(self):
-        print ("=====")
         pass
