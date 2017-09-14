@@ -20,29 +20,34 @@ MAX_LONG_POSITION_SIZE = 5 * 1.0/(NUM_LONG_POSITIONS + NUM_SHORT_POSITIONS)
 MIN_LONG_POSITION_SIZE = 0.1 * 1.0/(NUM_LONG_POSITIONS + NUM_SHORT_POSITIONS)
 MAX_SECTOR_EXPOSURE = 0.50
 
+
+
 class BasicHedgeRiskManager(RiskManager):
+
     def __init__(self):
         pass
 
     #@staticmethod #?
-    def optimalize(self,candidates):
-
+    def optimalize(self,candidates,factors):
         print candidates.index
         print "candidates len:", len(candidates),candidates
+        print "factors:",factors
+
+
         candidates_len = candidates.index
         w = cvx.Variable(len(candidates_len))
         # objective = cvx.Maximize(df.pred.as_matrix() * w)  # mini????
-        objective = cvx.Maximize(candidates.market_beta.as_matrix() * w)
+        objective = cvx.Maximize(candidates[factors.BETA].as_matrix() * w)           #FIX IT
         constraints = [cvx.sum_entries(w) == 1.0 * MAX_GROSS_LEVERAGE, w >= 0.0]  # dollar-neutral long/short
         # constraints.append(cvx.sum_entries(cvx.abs(w)) <= 1)  # leverage constraint
         constraints.extend([w >= MIN_LONG_POSITION_SIZE, w <= MAX_LONG_POSITION_SIZE])  # long exposure
-        riskvec = candidates.market_beta.fillna(1.0).as_matrix()                        # TODO
+        riskvec = candidates[factors['BETA']].fillna(1.0).as_matrix()                        # TODO
         constraints.extend([riskvec * w <= MAX_BETA_EXPOSURE])                    # risk
         print "MIN_SHORT_POSITION_SIZE %s, MAX_SHORT_POSITION_SIZE %s,MAX_BETA_EXPOSURE %s" % (MIN_LONG_POSITION_SIZE, MAX_LONG_POSITION_SIZE, MAX_BETA_EXPOSURE)
         # 版块对冲当前，因为股票组合小，不合适
         sector_dist = {}
         idx = 0
-        for equite, classid in candidates.sector.iteritems():
+        for equite, classid in candidates[factors['SECCTOR']].iteritems():
             if classid not in sector_dist:
                 _ = []
                 sector_dist[classid] = _

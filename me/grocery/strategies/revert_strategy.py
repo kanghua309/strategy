@@ -19,11 +19,11 @@ from strategy import Strategy
 
 risk_benchmark = '000001'
 class RevertStrategy(Strategy):
-    def __init__(self, executor, risk_manager):
+    def __init__(self, executor,risk_manager):
         self.executor = executor
         self.risk_manager = risk_manager
         self.portfolio = self.executor.portofolio
-        self.portfolio_contain_size = 20
+        self.portfolio_contain_size = 19
         pass
 
     def __check_stop_limit(self,data):
@@ -93,7 +93,7 @@ class RevertStrategy(Strategy):
                 # print "profolio_hold_index:",profolio_hold_index
         print "profolio_hold_index after buy:", profolio_hold_index, len(profolio_hold_index)
         profolio_hold = pipeline_data.loc[profolio_hold_index]
-        weights = self.risk_manager.optimalize(profolio_hold)
+        weights = self.risk_manager.optimalize(profolio_hold,{'BETA':'market_beta','SECTOR':'sector'})
         return remove_dict,weights
 
 
