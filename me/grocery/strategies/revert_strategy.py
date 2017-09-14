@@ -23,7 +23,7 @@ class RevertStrategy(Strategy):
         self.executor = executor
         self.risk_manager = risk_manager
         self.portfolio = self.executor.portofolio
-        self.portfolio_contain_size = len(self.portfolio)
+        self.portfolio_contain_size = 20
         pass
 
     def __check_stop_limit(self,data):

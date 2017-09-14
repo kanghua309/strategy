@@ -18,7 +18,7 @@ MAX_LONG_POSITION_SIZE = 5 * 1.0/(NUM_LONG_POSITIONS + NUM_SHORT_POSITIONS)
 #MAX_SHORT_POSITION_SIZE = 2*1.0/(NUM_LONG_POSITIONS + NUM_SHORT_POSITIONS)
 
 MIN_LONG_POSITION_SIZE = 0.1 * 1.0/(NUM_LONG_POSITIONS + NUM_SHORT_POSITIONS)
-MAX_SECTOR_EXPOSURE = 0.40
+MAX_SECTOR_EXPOSURE = 0.50
 
 class BasicHedgeRiskManager(RiskManager):
     def __init__(self):
@@ -28,7 +28,7 @@ class BasicHedgeRiskManager(RiskManager):
     def optimalize(self,candidates):
 
         print candidates.index
-        print "candidates len \n", len(candidates)
+        print "candidates len:", len(candidates),candidates
         candidates_len = candidates.index
         w = cvx.Variable(len(candidates_len))
         # objective = cvx.Maximize(df.pred.as_matrix() * w)  # mini????

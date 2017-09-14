@@ -30,13 +30,16 @@ def make_pipeline(context):
     columns,universe = context.strategy.pipeline_columns_and_mask()
     return Pipeline(
         columns= columns,
-        screen=universe,
+        screen = universe,
     )
 
 def rebalance(context, data):
+    print context.pipeline_data
     if (context.sim_params.end_session - get_datetime() > timedelta(days=6)):  # 只在最后一个周末;周5运行
         return
     pipeline_data = context.pipeline_data
+    pipeline_data.index = [index.symbol for index in pipeline_data.index]
+
     shorts, longs = context.strategy.compute_allocation(data,pipeline_data)
     print "to trade:",shorts,longs
     #context.strategy.trade(shorts,longs)
