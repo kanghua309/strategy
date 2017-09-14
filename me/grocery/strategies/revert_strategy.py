@@ -93,7 +93,7 @@ class RevertStrategy(Strategy):
                 # print "profolio_hold_index:",profolio_hold_index
         print "profolio_hold_index after buy:", profolio_hold_index, len(profolio_hold_index)
         profolio_hold = pipeline_data.loc[profolio_hold_index]
-        weights = self.risk_manager.optimalize(profolio_hold,{'BETA':'market_beta','SECTOR':'sector'})
+        weights = self.risk_manager.optimalize(profolio_hold,{'ALPHA':'volume_pct_beta','BETA':'market_beta','SECTOR':'sector'})
         return remove_dict,weights
 
 
