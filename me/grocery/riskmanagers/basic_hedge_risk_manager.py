@@ -25,24 +25,24 @@ class BasicHedgeRiskManager(RiskManager):
         pass
 
     #@staticmethod #?
-    def optimalize(self,data):
+    def optimalize(self,candidates):
 
-        print data.index
-        print "data len \n", len(data)
-        candidates = data.index
-        w = cvx.Variable(len(candidates))
+        print candidates.index
+        print "candidates len \n", len(candidates)
+        candidates_len = candidates.index
+        w = cvx.Variable(len(candidates_len))
         # objective = cvx.Maximize(df.pred.as_matrix() * w)  # mini????
-        objective = cvx.Maximize(data.market_beta.as_matrix() * w)
+        objective = cvx.Maximize(candidates.market_beta.as_matrix() * w)
         constraints = [cvx.sum_entries(w) == 1.0 * MAX_GROSS_LEVERAGE, w >= 0.0]  # dollar-neutral long/short
         # constraints.append(cvx.sum_entries(cvx.abs(w)) <= 1)  # leverage constraint
         constraints.extend([w >= MIN_LONG_POSITION_SIZE, w <= MAX_LONG_POSITION_SIZE])  # long exposure
-        riskvec = data.market_beta.fillna(1.0).as_matrix()                        # TODO
+        riskvec = candidates.market_beta.fillna(1.0).as_matrix()                        # TODO
         constraints.extend([riskvec * w <= MAX_BETA_EXPOSURE])                    # risk
         print "MIN_SHORT_POSITION_SIZE %s, MAX_SHORT_POSITION_SIZE %s,MAX_BETA_EXPOSURE %s" % (MIN_LONG_POSITION_SIZE, MAX_LONG_POSITION_SIZE, MAX_BETA_EXPOSURE)
         # 版块对冲当前，因为股票组合小，不合适
         sector_dist = {}
         idx = 0
-        for equite, classid in data.sector.iteritems():
+        for equite, classid in candidates.sector.iteritems():
             if classid not in sector_dist:
                 _ = []
                 sector_dist[classid] = _
@@ -59,7 +59,7 @@ class BasicHedgeRiskManager(RiskManager):
             return pd.Series()
             # raise SystemExit(-1)
         print np.squeeze(np.asarray(w.value))  # Remove single-dimensional entries from the shape of an array
-        return pd.Series(data=np.squeeze(np.asarray(w.value)), index=candidates)
+        return pd.Series(data=np.squeeze(np.asarray(w.value)), index=candidates.index)
 
 
 

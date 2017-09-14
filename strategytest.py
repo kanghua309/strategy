@@ -18,7 +18,7 @@ from zipline.api import (
 )
 from zipline.pipeline import Pipeline
 from me.grocery.strategies.revert_strategy import RevertStrategy
-from me.grocery.executors.xuqiu_executor import Executor
+from me.grocery.executors.xuqiu_executor import XieqiuExecutor
 from me.grocery.riskmanagers.basic_hedge_risk_manager import BasicHedgeRiskManager
 
 
@@ -37,18 +37,20 @@ def rebalance(context, data):
     if (context.sim_params.end_session - get_datetime() > timedelta(days=6)):  # 只在最后一个周末;周5运行
         return
     pipeline_data = context.pipeline_data
-    shorts, longs = context.strategy.compute_allocation(pipeline_data)
-    context.strategy.trade(shorts,longs)
+    shorts, longs = context.strategy.compute_allocation(data,pipeline_data)
+    print "to trade:",shorts,longs
+    #context.strategy.trade(shorts,longs)
     pass
 
 
 def __build_strategy(context):
-    executor = Executor(account='18618280998', password='Threyear#3', portfolio_code='ZH1124287')
+    executor = XieqiuExecutor(account='18618280998', password='Threyear#3', portfolio='ZH1124287')
+    executor.login()
     riskmanger = BasicHedgeRiskManager()
     context.strategy = RevertStrategy(executor, riskmanger)
 
 def initialize(context):
-    context.__build_strategy()
+    __build_strategy(context)
     attach_pipeline(make_pipeline(context), 'my_pipeline')
     schedule_function(rebalance, date_rules.week_end(days_offset=0), half_days=True)  # 周天 ? 周5 ！！！
     # record my portfolio variables at the end of day

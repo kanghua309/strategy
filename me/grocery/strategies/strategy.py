@@ -11,7 +11,7 @@ class Strategy(object):
         #records positions associated with strategy and assigns to an empty dictionary
         #self.pos = dict()
         pass
-    def compute_allocation(self,dataframe):
+    def compute_allocation(self,data,pipeline_data):
         pass
         raise NotImplementedError()
 

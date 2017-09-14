@@ -6,7 +6,7 @@ from zipline.api import (
     get_datetime,
 )
 from datetime import timedelta, datetime
-
+from zipline.pipeline.data import USEquityPricing
 from zipline.pipeline.factors import RollingLinearRegressionOfReturns,Latest
 from me.pipeline.classifiers.tushare.sector import get_sector
 from me.pipeline.factors.boost import HurstExp,Beta
@@ -22,7 +22,7 @@ class RevertStrategy(Strategy):
     def __init__(self, executor, risk_manager):
         self.executor = executor
         self.risk_manager = risk_manager
-        self.portfolio = self.executor.portofolio()
+        self.portfolio = self.executor.portofolio
         self.portfolio_contain_size = len(self.portfolio)
         pass
 
@@ -30,8 +30,6 @@ class RevertStrategy(Strategy):
         profolio = self.portfolio[self.portfolio['short_time'].isnull()].keep_price
         stop_dict = {}
         for index, value in profolio.iteritems():
-            if False == data.can_trade(symbol(index)):
-                continue
             keep_price = profolio[index]
             current_price = data.current(symbol(index), 'price')
             # print "Rebalance - index, keep_price, current_price"
@@ -48,8 +46,6 @@ class RevertStrategy(Strategy):
         profolio = self.portfolio[self.portfolio['short_time'].isnull()].long_time
         stop_dict = {}
         for index, value in profolio.iteritems():
-            if False == data.can_trade(symbol(index)):
-                continue
             lastdt = profolio[index]
             # print "Rebalance - index, keep_price, current_price"
             if datetime.now() - lastdt > timedelta(weeks=2):
@@ -57,7 +53,7 @@ class RevertStrategy(Strategy):
                 stop_dict[index] = 0.0
         return stop_dict
 
-    def compute_allocation(self,data):
+    def compute_allocation(self,data,pipeline_data):
         # print pipeline_data.loc['000018']
         # context.xueqiuLive.login()
         print "Rebalance - Current xq profolio"
@@ -71,7 +67,7 @@ class RevertStrategy(Strategy):
         print "remove_stock for expire:", remove_dict
         profolio_hold_index = xq_profolio_real.index.difference(remove_dict)
         print "-----------------------------------sell first------------------------------------------"
-        for index, row in data.ix[profolio_hold_index].iterrows():  # 应该有很hold里的在data中找不到，没关系，忽略之
+        for index, row in pipeline_data.ix[profolio_hold_index].iterrows():  # 应该有很hold里的在data中找不到，没关系，忽略之
             hurst = row.hurst
             vbeta = row.volume_pct_beta
             pbeta = row.price_pct_beta
@@ -81,10 +77,10 @@ class RevertStrategy(Strategy):
                     remove_dict[index] = 0.0
 
         profolio_hold_index = profolio_hold_index.difference(remove_dict)
-        pools = data.index.difference(xq_profolio_real.index)
+        pools = pipeline_data.index.difference(xq_profolio_real.index)
         print "profolio_hold_index before buy:", profolio_hold_index
         print "-----------------------------------buy last------------------------------------------"
-        for index, row in data.ix[pools].iterrows():
+        for index, row in pipeline_data.ix[pools].iterrows():
             hurst = row.hurst
             vbeta = row.volume_pct_beta
             pbeta = row.price_pct_beta
@@ -96,9 +92,8 @@ class RevertStrategy(Strategy):
                 break
                 # print "profolio_hold_index:",profolio_hold_index
         print "profolio_hold_index after buy:", profolio_hold_index, len(profolio_hold_index)
-        profolio_hold = data.loc[profolio_hold_index]
+        profolio_hold = pipeline_data.loc[profolio_hold_index]
         weights = self.risk_manager.optimalize(profolio_hold)
-
         return remove_dict,weights
 
 
@@ -120,7 +115,9 @@ class RevertStrategy(Strategy):
             smoothing_func=lambda f: f.downsample('month_start'),
 
         )
-        last_price = Latest() >= 1.0  #大于1元        # print positions
+        last_price = USEquityPricing.close.latest >= 1.0  #大于1元
+        #last_price = Latest().latest >= 1.0
+
         private_universe = private_universe_mask(self.portfolio.index)
         universe = universe & last_price | private_universe
         hurst = HurstExp(window_length=int(252 * 0.25), mask=universe)
