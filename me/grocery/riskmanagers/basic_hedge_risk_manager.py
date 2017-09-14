@@ -47,7 +47,7 @@ class BasicHedgeRiskManager(RiskManager):
         # 版块对冲当前，因为股票组合小，不合适
         sector_dist = {}
         idx = 0
-        for equite, classid in candidates[factors['SECCTOR']].iteritems():
+        for equite, classid in candidates[factors['SECTOR']].iteritems():
             if classid not in sector_dist:
                 _ = []
                 sector_dist[classid] = _
