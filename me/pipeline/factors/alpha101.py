@@ -2,6 +2,7 @@
 from zipline.pipeline.factors import Latest
 from zipline.pipeline.data import USEquityPricing
 from zipline.pipeline.factors import CustomFactor, AverageDollarVolume, Returns, RSI, VWAP
+from me.pipeline.classifiers.tushare.sector import get_sector,get_sector_class
 
 
 import pandas as pd
@@ -1461,14 +1462,14 @@ class Alpha47(CustomFactor):
         v1 = stats.rankdata(v10)
         out[:] = v0 - v1
 
-'''
+
 # (indneutralize(((correlation(delta(close, 1), delta(delay(close, 1), 1), 250) * delta(close, 1)) / close), IndClass.subindustry) / sum(((delta(close, 1) / delay(close, 1))^2), 250))
 class Alpha48(CustomFactor):
-    sub_industry_in = morningstar.asset_classification.morningstar_industry_group_code.latest
+    #sub_industry_in = morningstar.asset_classification.morningstar_industry_group_code.latest
+    sub_industry_in = get_sector()
     sub_industry_in.window_safe = True
     inputs = [USEquityPricing.close, sub_industry_in]
     window_length = 254
-
     def compute(self, today, assets, out, close, sub_industry):
         v00000 = np.empty((250, out.shape[0]))
         for i0 in range(1, 251):
@@ -1483,7 +1484,9 @@ class Alpha48(CustomFactor):
                 v0000100 = close[-2]
                 v000010[-i1] = v0000100  # delay
             v00001[-i0] = v000010[-1] - v000010[-2]
-        v0000 = pd.DataFrame(v00000).rolling(window=250).corr(pd.DataFrame(v00001)).tail(1).as_matrix()[-1]
+        #v0000 = pd.DataFrame(v00000).rolling(window=250).corr(pd.DataFrame(v00001)).tail(1).as_matrix()[-1]
+        v0000 = pd.rolling_corr(pd.DataFrame(v00000),pd.DataFrame(v00001),window=250).tail(1).as_matrix()[-1]
+
         v00010 = np.empty((2, out.shape[0]))
         for i0 in range(1, 3):
             v00010[-i0] = close[-i0]
@@ -1506,7 +1509,7 @@ class Alpha48(CustomFactor):
             v10[-i0] = np.power(v100, v101)
         v1 = v10.sum(axis=0)
         out[:] = v0 / v1
-'''
+
 # (((((delay(close, 20) - delay(close, 10)) / 10) - ((delay(close, 10) - close) / 10)) < (-1 * 0.1)) ? 1 : ((-1 * 1) * (close - delay(close, 1))))
 class Alpha49(CustomFactor):
     inputs = [USEquityPricing.close]

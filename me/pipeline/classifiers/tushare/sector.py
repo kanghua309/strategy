@@ -8,7 +8,7 @@ from zipline.api import (
     sid,
 )
 from zipline.pipeline.factors import CustomFactor
-from zipline.pipeline.classifiers import CustomClassifier
+from zipline.pipeline.classifiers import CustomClassifier,Latest
 #from me.pipeline.utils import tushare_loader as tu
 from me.pipeline.utils.meta import load_tushare_df
 

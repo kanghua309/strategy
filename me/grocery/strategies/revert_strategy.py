@@ -13,7 +13,6 @@ from me.pipeline.factors.boost import HurstExp,Beta
 from me.pipeline.filters.universe import make_china_equity_universe, default_china_equity_universe_mask, \
     private_universe_mask
 
-from me.grocery.executors.executor import Executor
 from strategy import Strategy
 
 
@@ -122,6 +121,7 @@ class RevertStrategy(Strategy):
         universe = universe & last_price | private_universe
         hurst = HurstExp(window_length=int(252 * 0.25), mask=universe)
         sector = get_sector()
+
         #top = hurst.top(2, groupby=sector)
         bottom = hurst.bottom(2, groupby=sector)
         # universe = (top | bottom) | private_universe
