@@ -3,10 +3,6 @@ from zipline.pipeline.factors import Latest
 from zipline.pipeline.data import USEquityPricing
 from zipline.pipeline.factors import CustomFactor, AverageDollarVolume, Returns, RSI, VWAP
 
-from zipline.pipeline.data import USEquityPricing
-from zipline.pipeline.factors import CustomFactor
-
-
 
 import pandas as pd
 import numpy as np
