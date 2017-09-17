@@ -194,9 +194,9 @@ def rebalance(context, data):
 
     constraints = [cvx.sum_entries(w) == 1, w > 0]  # dollar-neutral long/short
     # constraints.append(cvx.sum_entries(cvx.abs(w)) <= 1)  # leverage constraint
-    constraints.extend([w > 0.04, w <= 0.25])  # long exposure
+    constraints.extend([w > 0.05, w <= 0.10])  # long exposure
     riskvec = df.beta.fillna(1.0).as_matrix()
-    MAX_BETA_EXPOSURE = 0.20
+    MAX_BETA_EXPOSURE = 0.5
     constraints.extend([riskvec * w <= MAX_BETA_EXPOSURE])  # risk
 
     # filters = [i for i in range(len(africa)) if africa[i] == 1]
