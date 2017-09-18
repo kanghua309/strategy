@@ -53,19 +53,22 @@ risk_benchmark = '000001'
 def make_pipeline(context):
 
     universe = make_china_equity_universe(
-        target_size = 2000,
+        target_size = 100,
         mask = default_china_equity_universe_mask([risk_benchmark]),
         max_group_weight= 0.01,
-        smoothing_func = lambda f: f.downsample('month_start'),
-
+        smoothing_func = lambda f: f.downsample('week_start'),
     )
+
+
+    #private_universe = private_universe_mask(['601699'])
+    #universe = private_universe
 
     sector = get_sector()
 
 
     alpha48 = Alpha48()
 
-    pattern = PatternFactor(window_length = 42, indentification_lag=1)
+    pattern = PatternFactor(mask =universe, window_length = 42, indentification_lag=1)
     return Pipeline(
         columns={
             #'sector': sector.downsample('week_start'),
@@ -79,7 +82,7 @@ def make_pipeline(context):
 
 
 def rebalance(context, data):
-    print "pipeline_data",context.pipeline_data
+    print "pipeline_data",context.pipeline_data.dropna()
     if (context.sim_params.end_session - get_datetime() > timedelta(days=6)):  # 只在最后一个周末;周5运行
         return
     pipeline_data = context.pipeline_data

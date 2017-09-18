@@ -1,7 +1,16 @@
 # -*- coding: utf-8 -*-
 
 from __future__ import division
-
+from zipline.api import (
+    attach_pipeline,
+    date_rules,
+    time_rules,
+    pipeline_output,
+    record,
+    schedule_function,
+    symbol,
+    get_datetime,
+)
 import numpy as np
 import pandas as pd
 
@@ -25,7 +34,7 @@ def find_max_min(prices):
     prices_ = prices.copy()
     prices_.index = linspace(1., len(prices_), len(prices_))
     #kr = KernelReg([prices_.values], [prices_.index.values], var_type='c', bw=[1.8, 1])
-    kr = KernelReg([prices_.values], [prices_.index.values], var_type='c', bw='aic') #Either a user-specified bandwidth or the method for bandwidth selection. If a string, valid values are ‘cv_ls’ (least-squares cross-validation) and ‘aic’ (AIC Hurvich bandwidth estimation). Default is ‘cv_ls’.
+    kr = KernelReg([prices_.values], [prices_.index.values], var_type='c', bw=[1.8]) #Either a user-specified bandwidth or the method for bandwidth selection. If a string, valid values are ‘cv_ls’ (least-squares cross-validation) and ‘aic’ (AIC Hurvich bandwidth estimation). Default is ‘cv_ls’.
     f = kr.fit([prices_.index.values])
 
     smooth_prices = pd.Series(data=f[0], index=prices.index)
@@ -53,6 +62,7 @@ def find_max_min(prices):
     p = prices.reset_index()
     max_min['day_num'] = p[p['index'].isin(max_min.date)].index.values
     max_min = max_min.set_index('day_num').price
+
     return max_min
 
 
@@ -122,8 +132,8 @@ def find_patterns(max_min):
 
 
 def _pattern_identification(prices, indentification_lag):
+    #print "------_pattern_identification"
     max_min = find_max_min(prices)
-
     # we are only interested in the last pattern (if multiple patterns are there)
     # and also the last min/max must have happened less than "indentification_lag"
     # days ago otherways it mush have already been identified or it is too late to be usefull
@@ -138,7 +148,9 @@ def _pattern_identification(prices, indentification_lag):
         return np.nan
 
     # possibly identify a pattern in the selected window
+    print  "max_min_last_window:-------------------------\n",get_datetime(),max_min,max_min_last_window
     patterns = find_patterns(max_min_last_window)
+    #print patterns
     if len(patterns) != 1:
         return np.nan
 
