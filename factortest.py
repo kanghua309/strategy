@@ -22,6 +22,7 @@ from zipline.pipeline.data import USEquityPricing
 from zipline.pipeline.factors import RollingLinearRegressionOfReturns
 
 from me.pipeline.factors.alpha101 import Alpha48
+from me.pipeline.factors.pattern import PatternFactor
 from me.grocery.broker.xueqiu import XueqiuLive
 from me.pipeline.classifiers.tushare.sector import get_sector
 # from me.broker.xuqie.XueqiueLive import login,adjust_weight,get_profolio_position,get_profilio_size,get_profolio_keep_cost_price
@@ -63,10 +64,13 @@ def make_pipeline(context):
 
 
     alpha48 = Alpha48()
+
+    pattern = PatternFactor(window_length = 42, indentification_lag=1)
     return Pipeline(
         columns={
-            'sector': sector.downsample('week_start'),
-            'alpha48':alpha48,
+            #'sector': sector.downsample('week_start'),
+            #'alpha48':alpha48,
+            'pattern':pattern,
             #'testrank':hurst.rank(mask=universe)
         },
         screen=universe,
@@ -75,6 +79,7 @@ def make_pipeline(context):
 
 
 def rebalance(context, data):
+    print "pipeline_data",context.pipeline_data
     if (context.sim_params.end_session - get_datetime() > timedelta(days=6)):  # 只在最后一个周末;周5运行
         return
     pipeline_data = context.pipeline_data
@@ -88,9 +93,9 @@ def optimalize(context,mask):
 
 
 def initialize(context):
-    context.xueqiuLive = XueqiuLive(user='', account='18618280998', password='Threyear#3',
-                                    portfolio_code='ZH1124287')  # 巴颜喀拉山
-    context.xueqiuLive.login()
+    #context.xueqiuLive = XueqiuLive(user='', account='18618280998', password='Threyear#3',
+    #                                portfolio_code='ZH1124287')  # 巴颜喀拉山
+    #context.xueqiuLive.login()
     attach_pipeline(make_pipeline(context), 'my_pipeline')
     schedule_function(rebalance,date_rules.week_end(days_offset=0), half_days=True)  # 周天 ? 周5 ！！！
     # record my portfolio variables at the end of day

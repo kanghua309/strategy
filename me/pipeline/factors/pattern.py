@@ -1,3 +1,7 @@
+# -*- coding: utf-8 -*-
+
+from __future__ import division
+
 import numpy as np
 import pandas as pd
 
@@ -16,11 +20,14 @@ from zipline.api import (
 from zipline.pipeline.data import USEquityPricing
 from zipline.pipeline.factors import CustomFactor
 
+
 def find_max_min(prices):
     prices_ = prices.copy()
     prices_.index = linspace(1., len(prices_), len(prices_))
-    kr = KernelReg([prices_.values], [prices_.index.values], var_type='c', bw=[1.8, 1])
+    #kr = KernelReg([prices_.values], [prices_.index.values], var_type='c', bw=[1.8, 1])
+    kr = KernelReg([prices_.values], [prices_.index.values], var_type='c', bw='aic') #Either a user-specified bandwidth or the method for bandwidth selection. If a string, valid values are ‘cv_ls’ (least-squares cross-validation) and ‘aic’ (AIC Hurvich bandwidth estimation). Default is ‘cv_ls’.
     f = kr.fit([prices_.index.values])
+
     smooth_prices = pd.Series(data=f[0], index=prices.index)
 
     local_max = argrelextrema(smooth_prices.values, np.greater)[0]
@@ -46,7 +53,6 @@ def find_max_min(prices):
     p = prices.reset_index()
     max_min['day_num'] = p[p['index'].isin(max_min.date)].index.values
     max_min = max_min.set_index('day_num').price
-
     return max_min
 
 
