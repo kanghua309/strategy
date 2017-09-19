@@ -161,11 +161,7 @@ class XueqiuLive:
 
 if __name__ == '__main__':
      xqlive = XueqiuLive(user ='', account ='18618280998', password ='Threeeyear3#', portfolio_code='ZH1140387')
-     print xqlive
      xqlive.login()
      s = xqlive.get_profolio_position()
-     print s
      s = xqlive.get_profilio_size()
-     print s
      s = xqlive.get_profolio_info()
-     print s

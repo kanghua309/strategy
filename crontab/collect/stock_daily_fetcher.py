@@ -114,7 +114,7 @@ today = str(pd.Timestamp(dt.now()))[:10]
 today = datetime.datetime.strptime(today,'%Y-%m-%d')
 
 conn = sqlite3.connect('History.db', check_same_thread=False)
-'''
+
 retry = 0
 while True:
    try:
@@ -127,10 +127,10 @@ while True:
             conn.close()
             raise SystemExit(-1)
        time.sleep(60)
-'''
-df = pickle.load(open('dbak/18-09-2017',"rb"))
-today = datetime.datetime.strptime('18-09-2017','%d-%m-%Y')
-print today
+
+#df = pickle.load(open('dbak/18-09-2017',"rb"))
+#today = datetime.datetime.strptime('18-09-2017','%d-%m-%Y')
+#print today
 #raise SystemExit(-1)
 
 ind = 0
@@ -142,7 +142,7 @@ for index,row in df.iterrows():
     stock = df.at[today,'code']
     print stock
     gapday,stocklastsavedday = _check(stock,conn)
-    gapday = 1
+    #gapday = 1
     print "today:",today, " gapday:",gapday," stocklastsavedday:",stocklastsavedday
     if  gapday == 1 : 
         print ("to load today data" ,stock,today)

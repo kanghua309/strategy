@@ -44,8 +44,6 @@ def find_max_min(prices):
 
     local_max = argrelextrema(smooth_prices.values, np.greater)[0]
     local_min = argrelextrema(smooth_prices.values, np.less)[0]
-    print local_max
-    print local_min
     price_local_max_dt = []
     for i in local_max:
         if (i > 1) and (i < len(prices) - 1):
@@ -152,14 +150,12 @@ def _pattern_identification(prices, indentification_lag):
         return np.nan
 
     # possibly identify a pattern in the selected window
-    print  "max_min_last_window:-------------------------\n",max_min,max_min_last_window
     patterns = find_patterns(max_min_last_window)
-    print patterns
     if len(patterns) != 1:
         return np.nan
 
     name, start_end_day_nums = patterns.iteritems().next()
-    print  name, start_end_day_nums,max_min_last_window
+    #print(name, start_end_day_nums,max_min_last_window)
     pattern_code = {
         'HS': -2,
         'IHS': 2,
