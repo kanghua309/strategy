@@ -65,6 +65,9 @@ def _clean(stock, conn):
         query = "delete from '%s' where rowid not in(select max(rowid) from '%s' group by date)" % (stock, stock)
         cur.execute(query)
         conn.commit()
+        query = "select * from '%s' order by date" % stock
+        df = pd.read_sql(query, conn)
+        print "after",df.tail(5)
     except Exception, arg:
         print "exceptionc:", stock, arg
         raise SystemExit(-1)
@@ -86,19 +89,15 @@ def  xxx(stock,conn):
 
 conn = sqlite3.connect('History.db', check_same_thread=False)
 alreadylist = getAllStockSaved()
-_modify('601326',conn)
-_clean('601326',conn)
+#_modify('601326',conn)
+#_clean('600363',conn)
 
 #xxx('603987',conn)
 #_clean('603987',conn)
 #_clean('603979',conn)
 
-'''
 for stock in alreadylist.name:
     _modify(stock,conn)
-    #_clean('600363',conn)
-    #_modify('600363',conn)
     _clean(stock,conn)
-'''
 
 conn.close()

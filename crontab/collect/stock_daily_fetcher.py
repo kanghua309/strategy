@@ -28,7 +28,6 @@ def getAllStockSaved():
     return alreadylist
 
 
-import datetime
 def _check(stock, conn):
     print "check ----- :", stock
     query = "select * from '%s' order by date" % stock
@@ -39,13 +38,21 @@ def _check(stock, conn):
     except:
         print "stock '%s' read failed" % (stock)
         stocklastsavedday = '1970-01-01'
-
     if dt.now().weekday() == 5:  
         lasttradeday = str(pd.Timestamp(dt.now()) - pd.Timedelta(days=1))[:10]
     elif dt.now().weekday() == 6: #sunday
         lasttradeday = str(pd.Timestamp(dt.now()) - pd.Timedelta(days=2))[:10]
+    elif dt.now().weekday() == 0: #monday
+         if dt.now().hour > 15:
+               lasttradeday = str(pd.Timestamp(dt.now()))[:10]
+         else:
+               lasttradeday = str(pd.Timestamp(dt.now()) - pd.Timedelta(days=3))[:10]
     else:
-        lasttradeday = str(pd.Timestamp(dt.now()))[:10]
+         if dt.now().hour > 15:
+               lasttradeday = str(pd.Timestamp(dt.now()))[:10]
+         else:
+               lasttradeday = str(pd.Timestamp(dt.now()) - pd.Timedelta(days=1))[:10]
+           
     print "lasttradeday %s,stocklastsaveday %s" % (lasttradeday,stocklastsavedday)
     gap = datetime.datetime.strptime(lasttradeday,'%Y-%m-%d') - datetime.datetime.strptime(stocklastsavedday,'%Y-%m-%d') 
     return gap.days,stocklastsavedday
@@ -54,12 +61,13 @@ def _update(stock,begin, conn):
     print "update ----- :", stock
     try:
         df = ts.get_h_data(stock, start=begin, retry_count=5, pause=1)
-        print df.head(2)
-        df[['open', 'high', 'close', 'low', 'volume']].to_sql(stock, conn, if_exists='append')
+        if len(df) != 0:
+           print df.head(2)
+           df[['open', 'high', 'close', 'low', 'volume']].to_sql(stock, conn, if_exists='append')
         import time
         time.sleep(10)
     except Exception, arg:
-        print "exceptionu:", stock, arg
+        print "exception:", stock, arg
         raise SystemExit(-1)
         #errorlist.append(stock)
 
@@ -101,11 +109,12 @@ def record():
 import pickle
 import time
 begin = datetime.datetime.now()
+
 today = str(pd.Timestamp(dt.now()))[:10]
 today = datetime.datetime.strptime(today,'%Y-%m-%d')
+
 conn = sqlite3.connect('History.db', check_same_thread=False)
-
-
+'''
 retry = 0
 while True:
    try:
@@ -119,8 +128,11 @@ while True:
             raise SystemExit(-1)
        time.sleep(60)
 '''
-df = pickle.load(open('dbak/28-08-2017',"rb"))
-'''
+df = pickle.load(open('dbak/18-09-2017',"rb"))
+today = datetime.datetime.strptime('18-09-2017','%d-%m-%Y')
+print today
+#raise SystemExit(-1)
+
 ind = 0
 for index,row in df.iterrows():  
     df = pd.DataFrame(row).T
@@ -130,7 +142,7 @@ for index,row in df.iterrows():
     stock = df.at[today,'code']
     print stock
     gapday,stocklastsavedday = _check(stock,conn)
-    #gapday = 1
+    gapday = 1
     print "today:",today, " gapday:",gapday," stocklastsavedday:",stocklastsavedday
     if  gapday == 1 : 
         print ("to load today data" ,stock,today)
@@ -150,7 +162,7 @@ for index,row in df.iterrows():
         if gapday < 10:        
             _update(stock,stocklastsavedday,conn)
     else:
-        print ("%s today has load yet" % stock)
+        print ("%s latest ready date has load yet" % stock)
     ind +=1
     print "---------------------------------------------------count ",ind
 
