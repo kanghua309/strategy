@@ -34,14 +34,18 @@ def find_max_min(prices):
     prices_ = prices.copy()
     prices_.index = linspace(1., len(prices_), len(prices_))
     #kr = KernelReg([prices_.values], [prices_.index.values], var_type='c', bw=[1.8, 1])
-    kr = KernelReg([prices_.values], [prices_.index.values], var_type='c', bw=[1.8]) #Either a user-specified bandwidth or the method for bandwidth selection. If a string, valid values are ‘cv_ls’ (least-squares cross-validation) and ‘aic’ (AIC Hurvich bandwidth estimation). Default is ‘cv_ls’.
+    kr = KernelReg([prices_.values], [prices_.index.values], var_type='c', bw=[2]) # 小了捕捉局部，大了捕捉全局 ！
+    # Either a user-specified bandwidth or the method for bandwidth selection.
+    # If a string, valid values are ‘cv_ls’ (least-squares cross-validation) and ‘aic’ (AIC Hurvich bandwidth estimation).
+    # Default is ‘cv_ls’.
     f = kr.fit([prices_.index.values])
 
     smooth_prices = pd.Series(data=f[0], index=prices.index)
 
     local_max = argrelextrema(smooth_prices.values, np.greater)[0]
     local_min = argrelextrema(smooth_prices.values, np.less)[0]
-
+    print local_max
+    print local_min
     price_local_max_dt = []
     for i in local_max:
         if (i > 1) and (i < len(prices) - 1):
@@ -105,7 +109,7 @@ def find_patterns(max_min):
         elif (e1 < e2) and (e1 > e3) and (e3 > e5) and (e2 < e4):
             patterns['BBOT'].append((window.index[0], window.index[-1]))
 
-        # Triangle Top
+        # Triangle Top  #越来越低
         elif (e1 > e2) and (e1 > e3) and (e3 > e5) and (e2 < e4):
             patterns['TTOP'].append((window.index[0], window.index[-1]))
 
@@ -148,14 +152,14 @@ def _pattern_identification(prices, indentification_lag):
         return np.nan
 
     # possibly identify a pattern in the selected window
-    print  "max_min_last_window:-------------------------\n",get_datetime(),max_min,max_min_last_window
+    print  "max_min_last_window:-------------------------\n",max_min,max_min_last_window
     patterns = find_patterns(max_min_last_window)
-    #print patterns
+    print patterns
     if len(patterns) != 1:
         return np.nan
 
     name, start_end_day_nums = patterns.iteritems().next()
-
+    print  name, start_end_day_nums,max_min_last_window
     pattern_code = {
         'HS': -2,
         'IHS': 2,
@@ -176,5 +180,6 @@ class PatternFactor(CustomFactor):
     window_length = 40
 
     def compute(self, today, assets, out, close, indentification_lag):
+        #print "today=================:",today,len(close),close
         prices = pd.DataFrame(close, columns=assets)
         out[:] = prices.apply(_pattern_identification, args=(indentification_lag,))

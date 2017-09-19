@@ -47,7 +47,7 @@ def rebalance(context, data):
 
 
 def __build_strategy(context):
-    executor = XieqiuExecutor(account='18618280998', password='Threyear#3', portfolio='ZH1124287')
+    executor = XieqiuExecutor(account='xxxxxx', password='yyyyy', portfolio='ZH1124287')
     executor.login()
     riskmanger = BasicHedgeRiskManager()
     context.strategy = RevertStrategy(executor, riskmanger)

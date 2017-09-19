@@ -51,16 +51,17 @@ risk_benchmark = '000001'
 
 
 def make_pipeline(context):
-
+    '''
     universe = make_china_equity_universe(
         target_size = 100,
         mask = default_china_equity_universe_mask([risk_benchmark]),
         max_group_weight= 0.01,
         smoothing_func = lambda f: f.downsample('week_start'),
     )
+    '''
 
 
-    #private_universe = private_universe_mask(['601699'])
+    #private_universe = private_universe_mask(['002208'])
     #universe = private_universe
 
     sector = get_sector()
@@ -68,7 +69,7 @@ def make_pipeline(context):
 
     alpha48 = Alpha48()
 
-    pattern = PatternFactor(mask =universe, window_length = 42, indentification_lag=1)
+    pattern = PatternFactor(window_length = 100, indentification_lag=1)
     return Pipeline(
         columns={
             #'sector': sector.downsample('week_start'),
@@ -76,7 +77,7 @@ def make_pipeline(context):
             'pattern':pattern,
             #'testrank':hurst.rank(mask=universe)
         },
-        screen=universe,
+        #screen=universe,
     )
 
 
@@ -87,7 +88,7 @@ def rebalance(context, data):
         return
     pipeline_data = context.pipeline_data
     pipeline_data.index = [index.symbol for index in pipeline_data.index]
-    print "pipeline_data", len(pipeline_data)
+    #print "pipeline_data", len(pipeline_data)
 
     pass
 
@@ -96,7 +97,7 @@ def optimalize(context,mask):
 
 
 def initialize(context):
-    #context.xueqiuLive = XueqiuLive(user='', account='18618280998', password='Threyear#3',
+    #context.xueqiuLive = XueqiuLive(user='', account='yyyyyy', password='xxxxxxxx',
     #                                portfolio_code='ZH1124287')  # 巴颜喀拉山
     #context.xueqiuLive.login()
     attach_pipeline(make_pipeline(context), 'my_pipeline')
