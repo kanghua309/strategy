@@ -6,6 +6,7 @@ Created on Sat Apr 15 10:52:27 2017
 """
 import numpy as np
 import pandas as pd
+import os
 from zipline.api import (
     date_rules,
     time_rules,
@@ -24,7 +25,7 @@ from me.grocery.riskmanagers.basic_hedge_risk_manager import BasicHedgeRiskManag
 
 
 from datetime import timedelta, datetime
-
+from me.helper.configure import read_config
 
 def make_pipeline(context):
     columns,universe = context.strategy.pipeline_columns_and_mask()
@@ -47,7 +48,10 @@ def rebalance(context, data):
 
 
 def __build_strategy(context):
-    executor = XieqiuExecutor(account='xxxxxx', password='yyyyy', portfolio='ZH1124287')
+    conf = os.path.dirname('__file__') + './config/global.json'
+    config = read_config(conf)
+    print "config:",config
+    executor = XieqiuExecutor(account=config['account'], password=config['passwd'], portfolio=config['portfolio'])
     executor.login()
     riskmanger = BasicHedgeRiskManager()
     context.strategy = RevertStrategy(executor, riskmanger)
