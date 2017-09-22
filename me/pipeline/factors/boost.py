@@ -8,7 +8,8 @@ import numpy as np
 import pandas as pd
 
 from zipline.pipeline.data import USEquityPricing
-from zipline.pipeline.factors import CustomFactor
+from zipline.pipeline.factors import CustomFactor,Returns, Latest
+from me.pipeline.factors.tsfactor import Fundamental
 
 
 
@@ -92,6 +93,7 @@ class Momentum(CustomFactor):
                   (close[-1] - close[-lookback]) / close[-lookback])
 
 
+
 class ADV_adj(CustomFactor):
     inputs = [USEquityPricing.close, USEquityPricing.volume]
     window_length = 252
@@ -99,3 +101,23 @@ class ADV_adj(CustomFactor):
         #print "--------------ADV_adj---------------",today
         close[np.isnan(close)] = 0
         out[:] = np.mean(close * volume, 0)
+
+class SimpleMomentum(CustomFactor):
+    # will give us the returns from last month
+    inputs = [Returns(window_length=20)]
+    window_length = 20
+
+    def compute(self, today, assets, out, lag_returns):
+        out[:] = lag_returns[0]
+
+
+class SimpleBookToPrice(CustomFactor):
+    # pb = price to book, but we return the reciprocal
+    fund_pd = Fundamental().pb
+    fund_pd.window_safe = True
+    inputs = [fund_pd]
+    window_length = 1
+
+    def compute(self, today, assets, out, pb):
+        out[:] = 1 / pb
+

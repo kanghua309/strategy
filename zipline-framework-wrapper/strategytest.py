@@ -18,7 +18,9 @@ from zipline.api import (
     attach_pipeline,
 )
 from zipline.pipeline import Pipeline
-from me.grocery.strategies.revert_strategy import RevertStrategy
+from me.grocery.strategies.basic_revert_strategy import RevertStrategy
+from me.grocery.strategies.basic_factor_strategy import FactorStrategy
+
 from me.grocery.executors.xuqiu_executor import XieqiuExecutor
 from me.grocery.riskmanagers.basic_hedge_risk_manager import BasicHedgeRiskManager
 
@@ -51,10 +53,12 @@ def __build_strategy(context):
     conf = os.path.dirname('__file__') + './config/global.json'
     config = read_config(conf)
     print "config:",config
+
     executor = XieqiuExecutor(account=config['account'], password=config['passwd'], portfolio=config['portfolio'])
     executor.login()
     riskmanger = BasicHedgeRiskManager()
-    context.strategy = RevertStrategy(executor, riskmanger)
+    #context.strategy = RevertStrategy(executor, riskmanger)
+    context.strategy = FactorStrategy(executor, riskmanger)
 
 def initialize(context):
     __build_strategy(context)

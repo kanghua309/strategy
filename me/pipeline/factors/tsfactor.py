@@ -68,6 +68,7 @@ def Fundamental():
         outputs = columns
         inputs = [USEquityPricing.close]
         window_length = 1
+        window_safe = True
         def handle(self, assets):
             stocks = [sid(msid).symbol for msid in assets]
             #print stocks
