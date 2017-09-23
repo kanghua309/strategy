@@ -17,7 +17,7 @@ from zipline.pipeline.data import USEquityPricing
 from zipline.pipeline.factors import RollingLinearRegressionOfReturns,Latest,Returns
 from me.pipeline.classifiers.tushare.sector import get_sector
 from me.pipeline.factors.boost import HurstExp,Beta,SimpleBookToPrice,SimpleMomentum
-from me.pipeline.factors.advance import FactorRegress
+from me.pipeline.factors.machinelearning import FactorRegress
 from me.pipeline.factors.tsfactor import Fundamental
 from me.pipeline.filters.universe import make_china_equity_universe, default_china_equity_universe_mask, \
     private_universe_mask
@@ -63,6 +63,7 @@ class FactorStrategy(Strategy):
 
     def compute_allocation(self,data,pipeline_data):
         print pipeline_data
+        return {},{}
 
     def trade(self,shorts,longs):
         print "do sell ....."
@@ -85,12 +86,12 @@ class FactorStrategy(Strategy):
 
         # market cap and book-to-price data gets fed in here
         market_cap = Fundamental().outstanding
-        market_cap.window_safe = True
+        #market_cap.window_safe = True
         #market_cap = Latest([Fundamental().outstanding])
 
 
         book_to_price = SimpleBookToPrice()
-
+        #book_to_price.window_safe = True
         # we also get daily returns
         returns = Returns(window_length=2)
 
@@ -99,15 +100,15 @@ class FactorStrategy(Strategy):
 
         # we compute a daily rank of both factors, this is used in the next step,
         # which is computing portfolio membership
-        #market_cap_rank = market_cap.rank(mask=universe)
+        market_cap_rank = market_cap.rank(mask=universe)
 
         book_to_price_rank = book_to_price.rank(mask=universe)
 
         momentum_rank = momentum.rank(mask=universe)
 
         # build Filters representing the top and bottom 1000 stocks by our combined ranking system
-        #biggest = market_cap_rank.top(100)
-        #smallest = market_cap_rank.bottom(100)
+        biggest = market_cap_rank.top(100)
+        smallest = market_cap_rank.bottom(100)
 
         highpb = book_to_price_rank.top(100)
         lowpb = book_to_price_rank.bottom(100)
@@ -128,16 +129,16 @@ class FactorStrategy(Strategy):
 
         all_factors = {
             'market_cap': market_cap,
-            #'book_to_price': book_to_price.downsample('week_start'),
+            'book_to_price': book_to_price.downsample('week_start'),
             #'returns': returns,
-            #'momentum': momentum,
-            #'market_beta': risk_beta,
-            #'biggest': biggest,
-            #'smallest': smallest,
-            #'highpb': highpb,
-            #'lowpb': lowpb,
-            #'top': top,
-            #'bottom': bottom,
+            'momentum': momentum,
+            'market_beta': risk_beta,
+            'biggest': biggest,
+            'smallest': smallest,
+            'highpb': highpb,
+            'lowpb': lowpb,
+            'top': top,
+            'bottom': bottom,
         }
 
         return all_factors,universe
@@ -145,24 +146,26 @@ class FactorStrategy(Strategy):
 
 
     def pipeline_columns_and_mask(self):
-
+        factors,universe = self.__make_factors()
         from collections import OrderedDict
         factors_pipe = OrderedDict()
         # Create returns over last n days.
-        factors,universe = self.__make_factors()
+        factors_pipe['Returns'] = Returns(inputs=[USEquityPricing.open],
+                                          mask=universe, window_length=5)
         # Instantiate ranked factors
         idx =0
         for name, f in factors.iteritems():
             #print name
             print "--------------------",name
+            f.window_safe = True
             factors_pipe[name] = f
             idx = idx +1
-            if idx == 10:
+            if idx == 16:
                 break
 
         # Create our ML pipeline factor. The window_length will control how much
         # lookback the passed in data will have.
-        predict = FactorRegress(columns=[],inputs=factors_pipe.values(),window_length=10,mask=universe)
+        predict = FactorRegress(inputs=factors_pipe.values(),window_length=10,mask=universe)
         print predict
         columns = {
             'predict':predict,
