@@ -79,7 +79,7 @@ class FactorStrategy(Strategy):
         universe = make_china_equity_universe(
             target_size=3000,
             mask=default_china_equity_universe_mask([risk_benchmark]),
-            max_group_weight=0.1,
+            max_group_weight=0.005,
             smoothing_func=lambda f: f.downsample('month_start'),
 
         )
@@ -153,7 +153,7 @@ class FactorStrategy(Strategy):
         factors_pipe['Returns'] = Returns(inputs=[USEquityPricing.open],
                                           mask=universe, window_length=5)
         # Instantiate ranked factors
-        idx =0
+
         for name, f in factors.iteritems():
             #print name
             print "--------------------",name
@@ -163,7 +163,9 @@ class FactorStrategy(Strategy):
 
         # Create our ML pipeline factor. The window_length will control how much
         # lookback the passed in data will have.
-        predict = BasicFactorRegress(inputs=factors_pipe.values(), window_length=3, mask=universe)
+        predict = BasicFactorRegress(inputs=factors_pipe.values(), window_length=3, mask=universe, trigger_date='2017-09-15')
+        #predict.window_safe = True
+        #predict_clock = FixTime(inputs=[predict], trigger_date='2017-09-15', window_length = 3)
         #print predict
         columns = {
             'predict':predict,
