@@ -16,7 +16,7 @@ n_fwd_days = 5 # number of days to compute returns over
 class BasicFactorRegress(CustomFactor):
     init = False
 
-    def __shift_mask_data(X, Y, upper_percentile=70, lower_percentile=30, n_fwd_days=1):
+    def __shift_mask_data(self,X, Y, upper_percentile=70, lower_percentile=30, n_fwd_days=1):
         # Shift X to match factors at t to returns at t+n_fwd_days (we want to predict future returns after all)
         shifted_X = np.roll(X, n_fwd_days, axis=0)
 
@@ -50,7 +50,7 @@ class BasicFactorRegress(CustomFactor):
 
         return X, Y_binary
 
-    def __get_last_values(input_data):
+    def __get_last_values(self,input_data):
         last_values = []
         for dataset in input_data:
             last_values.append(dataset[-1])
