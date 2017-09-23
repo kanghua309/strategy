@@ -85,9 +85,9 @@ class FactorStrategy(Strategy):
         )
 
         # market cap and book-to-price data gets fed in here
-        market_cap = Fundamental().outstanding
-        #market_cap.window_safe = True
-        #market_cap = Latest([Fundamental().outstanding])
+        outstanding = Fundamental().outstanding
+        outstanding.window_safe = True
+        market_cap = Latest([outstanding])
 
 
         book_to_price = SimpleBookToPrice()
@@ -107,16 +107,16 @@ class FactorStrategy(Strategy):
         momentum_rank = momentum.rank(mask=universe)
 
         # build Filters representing the top and bottom 1000 stocks by our combined ranking system
-        biggest = market_cap_rank.top(100)
-        smallest = market_cap_rank.bottom(100)
+        #biggest = market_cap_rank.top(100)
+        #smallest = market_cap_rank.bottom(100)
 
-        highpb = book_to_price_rank.top(100)
-        lowpb = book_to_price_rank.bottom(100)
+        #highpb = book_to_price_rank.top(100)
+        #lowpb = book_to_price_rank.bottom(100)
 
-        top = momentum_rank.top(100)
-        bottom = momentum_rank.bottom(100)
+        #top = momentum_rank.top(100)
+        #bottom = momentum_rank.bottom(100)
 
-        universe = universe & ( highpb | lowpb | top | bottom)
+        #universe = universe & ( highpb | lowpb | top | bottom)
         #universe = universe & (biggest | smallest | highpb | lowpb | top | bottom)
 
         risk_beta = 0.66 * RollingLinearRegressionOfReturns(
@@ -133,12 +133,12 @@ class FactorStrategy(Strategy):
             #'returns': returns,
             'momentum': momentum,
             'market_beta': risk_beta,
-            'biggest': biggest,
-            'smallest': smallest,
-            'highpb': highpb,
-            'lowpb': lowpb,
-            'top': top,
-            'bottom': bottom,
+            #'biggest': biggest,
+            #'smallest': smallest,
+            #'highpb': highpb,
+            #'lowpb': lowpb,
+            #'top': top,
+            #'bottom': bottom,
         }
 
         return all_factors,universe
@@ -158,12 +158,12 @@ class FactorStrategy(Strategy):
             #print name
             print "--------------------",name
             f.window_safe = True
-            factors_pipe[name] = f
-
+            factors_pipe[name] = f.rank(mask=universe)
+            #factors_pipe[name] = f().rank(mask=universe)
 
         # Create our ML pipeline factor. The window_length will control how much
         # lookback the passed in data will have.
-        predict = BasicFactorRegress(inputs=factors_pipe.values(), window_length=3, mask=universe, trigger_date='2017-09-15')
+        predict = BasicFactorRegress(inputs=factors_pipe.values(), window_length=80, mask=universe, trigger_date='2017-09-15')
         #predict.window_safe = True
         #predict_clock = FixTime(inputs=[predict], trigger_date='2017-09-15', window_length = 3)
         #print predict
