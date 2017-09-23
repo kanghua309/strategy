@@ -17,7 +17,7 @@ from zipline.pipeline.data import USEquityPricing
 from zipline.pipeline.factors import RollingLinearRegressionOfReturns,Latest,Returns
 from me.pipeline.classifiers.tushare.sector import get_sector
 from me.pipeline.factors.boost import HurstExp,Beta,SimpleBookToPrice,SimpleMomentum
-from me.pipeline.factors.machinelearning import FactorRegress
+from me.pipeline.factors.machinelearning import BasicFactorRegress
 from me.pipeline.factors.tsfactor import Fundamental
 from me.pipeline.filters.universe import make_china_equity_universe, default_china_equity_universe_mask, \
     private_universe_mask
@@ -159,14 +159,12 @@ class FactorStrategy(Strategy):
             print "--------------------",name
             f.window_safe = True
             factors_pipe[name] = f
-            idx = idx +1
-            if idx == 16:
-                break
+
 
         # Create our ML pipeline factor. The window_length will control how much
         # lookback the passed in data will have.
-        predict = FactorRegress(inputs=factors_pipe.values(),window_length=10,mask=universe)
-        print predict
+        predict = BasicFactorRegress(inputs=factors_pipe.values(), window_length=3, mask=universe)
+        #print predict
         columns = {
             'predict':predict,
         }

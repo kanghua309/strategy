@@ -15,40 +15,6 @@ from zipline.pipeline.data import USEquityPricing
 from zipline.pipeline.factors import CustomFactor
 import sqlite3
 
-'''
-conn = sqlite3.connect('History.db', check_same_thread=False)
-try:
-    df.to_sql("predict",conn, if_exists='append')
-except Exception, e:
-    print "exception :",e
-conn.close()
-
-
-
-if (today.weekday() == 0): #Monday
-   data = today
-   
-   conn = sqlite3.connect('test2.db', check_same_thread=False)
-   query = "select * from predict where date > '%s' order by date limit 1 " % date
-   df = pd.read_sql(query, conn)
-   df = df.set_index('date')
-   
-   new_index = assets
-   
-   df = df.reindex(columns = new_index)
-   
-   
-   for msid in assets:
-       stock = sid(msid).symbol
-       try:
-     new_colume_index = ['2','1','0']
-
-  except:
-             
-  else:
-  pass
-return oslist
-'''
 
 class RNNPredict(CustomFactor):
     inputs = [];
