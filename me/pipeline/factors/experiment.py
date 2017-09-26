@@ -12,7 +12,10 @@ from zipline.api import (
 )
 import datetime
 from zipline.pipeline.data import USEquityPricing
+from me.pipeline.classifiers.tushare.sector import get_sectors_no
 from zipline.pipeline.factors import AverageDollarVolume, CustomFactor
+import cvxpy as cvx
+
 
 class FixTime(CustomFactor):
     params = {'trigger_date':None,}
@@ -26,10 +29,12 @@ class FixTime(CustomFactor):
                 else:
                     print "------------------------------------================= do real factor?:"
                     print factor.T  #  factor 一天一行 .T一个股票一行
-
                     print "-----------------------------------",type(factor[-1])
                     out[:] = factor[-1]
             except:
                 out[:] = None
         else:
             out[:] = None
+
+
+

@@ -42,7 +42,7 @@ class BasicHedgeRiskManager(RiskManager):
         # constraints.append(cvx.sum_entries(cvx.abs(w)) <= 1)  # leverage constraint
         constraints.extend([w >= MIN_LONG_POSITION_SIZE, w <= MAX_LONG_POSITION_SIZE])  # long exposure
         riskvec = candidates[factors['BETA']].fillna(1.0).as_matrix()                        # TODO
-        constraints.extend([riskvec * w <= MAX_BETA_EXPOSURE])                    # risk
+        constraints.extend([riskvec * w <= MAX_BETA_EXPOSURE])                    # risk ?
         print "MIN_SHORT_POSITION_SIZE %s, MAX_SHORT_POSITION_SIZE %s,MAX_BETA_EXPOSURE %s" % (MIN_LONG_POSITION_SIZE, MAX_LONG_POSITION_SIZE, MAX_BETA_EXPOSURE)
         # 版块对冲当前，因为股票组合小，不合适
         sector_dist = {}

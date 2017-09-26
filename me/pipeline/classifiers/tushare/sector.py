@@ -59,6 +59,22 @@ def get_sector(sector_dict=None):
     return Sector()
 '''
 
+def get_sectors_no(mids):
+    basic = load_tushare_df("basic")
+    _class = get_sector_class()
+    no_ = []
+    missing_value = 0
+    for msid in mids:
+        stock = sid(msid).symbol
+        try:
+            industry = basic.loc[stock].industry
+            sector_no = _class[industry]
+            no_.append(sector_no)
+        except:
+            # print "stock %s in industry %s not find in default sector set, set zero" % (stock,industry)
+            no_.append(missing_value)
+    return no_
+
 def get_sector(sector_dict=None):
     if sector_dict is None:
         sector_dict = get_sector_class()

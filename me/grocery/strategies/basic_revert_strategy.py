@@ -7,11 +7,12 @@ from zipline.api import (
 )
 from datetime import timedelta, datetime
 from zipline.pipeline.data import USEquityPricing
-from zipline.pipeline.factors import RollingLinearRegressionOfReturns,Latest
+from zipline.pipeline.factors import RollingLinearRegressionOfReturns,Latest,Returns
 from me.pipeline.classifiers.tushare.sector import get_sector
 from me.pipeline.factors.boost import HurstExp,Beta
 from me.pipeline.filters.universe import make_china_equity_universe, default_china_equity_universe_mask, \
     private_universe_mask
+from me.pipeline.factors.risk import Markowitz
 
 from strategy import Strategy
 
@@ -92,44 +93,45 @@ class RevertStrategy(Strategy):
                 # print "profolio_hold_index:",profolio_hold_index
         print "profolio_hold_index after buy:", profolio_hold_index, len(profolio_hold_index)
         profolio_hold = pipeline_data.loc[profolio_hold_index]
-        weights = self.risk_manager.optimalize(profolio_hold,{'ALPHA':'volume_pct_beta','BETA':'market_beta','SECTOR':'sector'})
+        weights = self.risk_manager.optimalize(profolio_hold,{'ALPHA':'volume_pct_beta','BETA':'market_beta','SECTOR':'sector',"RETURNS":'returns'})
         return remove_dict,weights
 
 
     def trade(self,shorts,longs):
         print "do sell ....."
-        self.executor.orders(shorts)
+        #self.executor.orders(shorts)
         print "do buy ....."
-        self.executor.orders(longs)
+        #self.executor.orders(longs)
         pass
 
     def portfolio(self):
         raise NotImplementedError()
 
     def pipeline_columns_and_mask(self):
-        universe = make_china_equity_universe(
-            target_size=2000,
-            mask=default_china_equity_universe_mask([risk_benchmark]),
-            max_group_weight=0.01,
-            smoothing_func=lambda f: f.downsample('month_start'),
+        #universe = make_china_equity_universe(
+        #    target_size=3,
+        #    mask=default_china_equity_universe_mask([risk_benchmark]),
+        #    max_group_weight=0.01,
+        #    smoothing_func=lambda f: f.downsample('month_start'),
 
-        )
-        last_price = USEquityPricing.close.latest >= 1.0  #大于1元
+        #)
+        #last_price = USEquityPricing.close.latest >= 1.0  #大于1元
         #last_price = Latest().latest >= 1.0
 
-        private_universe = private_universe_mask(self.portfolio.index)
-        universe = universe & last_price | private_universe
-        hurst = HurstExp(window_length=int(252 * 0.25), mask=universe)
-        sector = get_sector()
+        universe  = private_universe_mask(['000759','603177','600312'])
+        #universe  = private_universe_mask(['000759'])
+        #universe = universe & last_price | private_universe
+        #hurst = HurstExp(window_length=int(252 * 0.25), mask=universe)
+        #sector = get_sector()
 
         #top = hurst.top(2, groupby=sector)
-        bottom = hurst.bottom(2, groupby=sector)
-        # universe = (top | bottom) | private_universe
-        universe = (bottom) & (sector != 0) | private_universe
-        combined_rank = (
-            hurst.rank(mask=universe)
-        )
-        pct_beta = Beta(window_length=21, mask=(universe))
+        #bottom = hurst.bottom(2, groupby=sector)
+        #universe = (top | bottom) | private_universe
+        #universe = (bottom) & (sector != 0) | private_universe
+        #combined_rank = (
+        #    hurst.rank(mask=universe)
+        #)
+        #pct_beta = Beta(window_length=21, mask=(universe))
         risk_beta = 0.66 * RollingLinearRegressionOfReturns(
             target=symbol(risk_benchmark),  # sid(8554),
             returns_length=6,
@@ -137,14 +139,22 @@ class RevertStrategy(Strategy):
             # mask=long_short_screen
             mask=(universe),
         ).beta + 0.33 * 1.0
-
+        x = USEquityPricing.close
+        returns = Returns(inputs=[USEquityPricing.close],
+                mask=universe,window_length=2)
+        returns.window_safe = True
+        risk_beta.window_safe = True
+        m = Markowitz(inputs=[returns,risk_beta],window_length=6,mask=universe)
         columns= {
-                    'hurst': hurst.downsample('week_start'),
-                    'price_pct_beta' : pct_beta.pbeta,
-                    'volume_pct_beta': pct_beta.vbeta,
-                    'sector': sector.downsample('week_start'),
-                    'market_beta': risk_beta,
-                    'rank':combined_rank,
+                    #'hurst': hurst.downsample('week_start'),
+                    #'price_pct_beta' : pct_beta.pbeta,
+                    #'volume_pct_beta': pct_beta.vbeta,
+                    #'sector': sector.downsample('week_start'),
+                    #'market_beta': risk_beta,
+                    #'rank':combined_rank,
+                    #'returns':returns,
+                    'm' : m,
                     #'testrank':hurst.rank(mask=universe)
+
                  }
         return columns,universe

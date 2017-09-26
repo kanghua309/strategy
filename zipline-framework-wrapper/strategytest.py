@@ -23,6 +23,8 @@ from me.grocery.strategies.basic_factor_strategy import FactorStrategy
 
 from me.grocery.executors.xuqiu_executor import XieqiuExecutor
 from me.grocery.riskmanagers.basic_hedge_risk_manager import BasicHedgeRiskManager
+from me.grocery.riskmanagers.basic_markowitz_risk_manager import BasicMarkowitzRiskManager
+
 
 
 
@@ -56,9 +58,10 @@ def __build_strategy(context):
 
     executor = XieqiuExecutor(account=config['account'], password=config['passwd'], portfolio=config['portfolio'])
     executor.login()
-    riskmanger = BasicHedgeRiskManager()
-    #context.strategy = RevertStrategy(executor, riskmanger)
-    context.strategy = FactorStrategy(executor, riskmanger)
+    #riskmanger = BasicHedgeRiskManager()
+    riskmanger = BasicMarkowitzRiskManager()
+    context.strategy = RevertStrategy(executor, riskmanger)
+    #context.strategy = FactorStrategy(executor, riskmanger)
 
 def initialize(context):
     __build_strategy(context)
@@ -69,17 +72,21 @@ def initialize(context):
                       date_rule=date_rules.every_day(),
                       time_rule=time_rules.market_close(),
                       half_days=True)
+    print "---------------------------init over"
+
     pass
 
 
 def handle_data(context, data):
-    print "handle_data %s" % (get_datetime())
+    print "----------------------------handle_data date - %s , price %s" % (get_datetime(), data.current(symbol('000759'), 'price'))
+    print "----------------------------handle_data date"
+
     pass
 
 
 def before_trading_start(context, data):
     context.pipeline_data = pipeline_output('my_pipeline')
-    print "before_trading_start date - %s , price %s" % (get_datetime(), data.current(symbol('000001'), 'price'))
+    print "----------------------------before_trading_start date - %s , price %s" % (get_datetime(), data.current(symbol('000759'), 'price'))
     pass
 
 
