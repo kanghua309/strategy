@@ -9,7 +9,7 @@ from datetime import timedelta, datetime
 from zipline.pipeline.data import USEquityPricing
 from zipline.pipeline.factors import RollingLinearRegressionOfReturns,Latest,Returns
 from me.pipeline.classifiers.tushare.sector import get_sector
-from me.pipeline.factors.boost import HurstExp,Beta
+from me.pipeline.factors.boost import HurstExp,Slope
 from me.pipeline.filters.universe import make_china_equity_universe, default_china_equity_universe_mask, \
     private_universe_mask
 from me.pipeline.factors.risk import Markowitz
@@ -18,12 +18,15 @@ from strategy import Strategy
 
 
 risk_benchmark = '000001'
+
+STOP_LOSS = 0.1  #止损
+STOP_WIN  = 0.1  #止盈
 class RevertStrategy(Strategy):
     def __init__(self, executor,risk_manager):
         self.executor = executor
         self.risk_manager = risk_manager
         self.portfolio = self.executor.portofolio
-        self.portfolio_contain_size = 19
+        self.portfolio_contain_size = 19 #股票组合容量20，除去一个placeholder ，共19个
         pass
 
     def __check_stop_limit(self,data):
@@ -33,13 +36,12 @@ class RevertStrategy(Strategy):
             keep_price = profolio[index]
             current_price = data.current(symbol(index), 'price')
             # print "Rebalance - index, keep_price, current_price"
-            if keep_price / current_price > 1.10:
+            if keep_price / current_price > 1 + STOP_WIN:
                 print "%s has down to stop limit, sell it - for %s,%s " % (index, keep_price, current_price)
                 stop_dict[index] = 0.0
-            if keep_price / current_price < 0.90:
+            if keep_price / current_price < 1 - STOP_LOSS:
                 print "%s has up to expected price , sell it - for %s,%s" % (index, keep_price, current_price)
                 stop_dict[index] = 0.0
-
         return stop_dict
 
     def __check_expired_limit(self,data):
@@ -48,7 +50,7 @@ class RevertStrategy(Strategy):
         for index, value in profolio.iteritems():
             lastdt = profolio[index]
             # print "Rebalance - index, keep_price, current_price"
-            if datetime.now() - lastdt > timedelta(weeks=2):
+            if datetime.now() - lastdt > timedelta(weeks=1):
                 print "%s has expired , sell it - for %s,%s" % (index, datetime.now(), lastdt)
                 stop_dict[index] = 0.0
         return stop_dict
@@ -57,43 +59,43 @@ class RevertStrategy(Strategy):
         # print pipeline_data.loc['000018']
         # context.xueqiuLive.login()
         print "Rebalance - Current xq profolio"
-        print len(self.portfolio), self.portfolio
+        #print len(self.portfolio), self.portfolio
 
         xq_profolio_real = self.portfolio[self.portfolio['short_time'].isnull()]
         remove_dict = self.__check_stop_limit(data)
-        print "remove_stock for stop:", remove_dict
+        print "Rebalance - remove_stock for stop:", remove_dict
         _remove     = self.__check_expired_limit(data)
         remove_dict.update(_remove)  # TODO
-        print "remove_stock for expire:", remove_dict
+        print "Rebalance - remove_stock for expire:", remove_dict
         profolio_hold_index = xq_profolio_real.index.difference(remove_dict)
-        print "-----------------------------------sell first------------------------------------------"
         for index, row in pipeline_data.ix[profolio_hold_index].iterrows():  # 应该有很hold里的在data中找不到，没关系，忽略之
             hurst = row.hurst
-            vbeta = row.volume_pct_beta
-            pbeta = row.price_pct_beta
-            if hurst <= 0.2:
-                if vbeta > 0 and vbeta < pbeta:
+            vslope = row.volume_pct_slope
+            pslope = row.price_pct_slope
+            if hurst <= 0.3:  #均值反转特性
+                if vslope > 0 and vslope < pslope:
                     print("++++++++++++++++++++++++++Info sell sym(%s) for mean revert at all" % index)
                     remove_dict[index] = 0.0
 
         profolio_hold_index = profolio_hold_index.difference(remove_dict)
+        print len(profolio_hold_index)
         pools = pipeline_data.index.difference(xq_profolio_real.index)
-        print "profolio_hold_index before buy:", profolio_hold_index
-        print "-----------------------------------buy last------------------------------------------"
+        # print "profolio_hold_index before buy:", profolio_hold_index
         for index, row in pipeline_data.ix[pools].iterrows():
-            hurst = row.hurst
-            vbeta = row.volume_pct_beta
-            pbeta = row.price_pct_beta
-            if hurst <= 0.2:
-                if vbeta < 0 and vbeta < pbeta:  # 先买均值回归的！ 安全！！！
-                    print("==========================Info buy sym(%s) for mean revert" % (index))
-                    profolio_hold_index = profolio_hold_index.insert(0, index)
-            if len(profolio_hold_index) == self.portfolio_contain_size:
+            if len(profolio_hold_index) >= self.portfolio_contain_size:
                 break
+            hurst = row.hurst
+            vslope = row.volume_pct_slope
+            pslope = row.price_pct_slope
+            if hurst <= 0.3:  #均值反转特性
+                if vslope < 0 and vslope < pslope:  # 先买均值回归的！ 安全！！！
+                    print("++++++++++++++++++++++++++Info buy sym(%s) for mean revert" % (index))
+                    profolio_hold_index = profolio_hold_index.insert(0, index)
+
                 # print "profolio_hold_index:",profolio_hold_index
-        print "profolio_hold_index after buy:", profolio_hold_index, len(profolio_hold_index)
+        print "Rebalance - Profolio_hold_index now:",profolio_hold_index
         profolio_hold = pipeline_data.loc[profolio_hold_index]
-        weights = self.risk_manager.optimalize(profolio_hold,{'ALPHA':'volume_pct_beta','BETA':'market_beta','SECTOR':'sector',"RETURNS":'returns'})
+        weights = self.risk_manager.optimalize(profolio_hold,{'ALPHA':'volume_pct_slope','BETA':'market_beta','SECTOR':'sector',"RETURNS":'returns'})  #作为参数优化的必备项
         return remove_dict,weights
 
 
@@ -108,53 +110,39 @@ class RevertStrategy(Strategy):
         raise NotImplementedError()
 
     def pipeline_columns_and_mask(self):
-        #universe = make_china_equity_universe(
-        #    target_size=3,
-        #    mask=default_china_equity_universe_mask([risk_benchmark]),
-        #    max_group_weight=0.01,
-        #    smoothing_func=lambda f: f.downsample('month_start'),
+        universe = make_china_equity_universe(
+            target_size=2000,
+            mask=default_china_equity_universe_mask([risk_benchmark]),
+            max_group_weight=0.01,
+            smoothing_func=lambda f: f.downsample('month_start'),
+        )
+        private_universe = private_universe_mask(self.portfolio.index) #把当前组合的stock 包含在universe中
 
-        #)
-        #last_price = USEquityPricing.close.latest >= 1.0  #大于1元
-        #last_price = Latest().latest >= 1.0
-
-        universe  = private_universe_mask(['000759','603177','600312'])
-        #universe  = private_universe_mask(['000759'])
-        #universe = universe & last_price | private_universe
-        #hurst = HurstExp(window_length=int(252 * 0.25), mask=universe)
-        #sector = get_sector()
-
-        #top = hurst.top(2, groupby=sector)
-        #bottom = hurst.bottom(2, groupby=sector)
-        #universe = (top | bottom) | private_universe
-        #universe = (bottom) & (sector != 0) | private_universe
+        last_price = USEquityPricing.close.latest >= 1.0  #大于1元
+        universe = universe & last_price | private_universe
+        hurst = HurstExp(window_length=int(252 * 0.25), mask=universe) #判断动量或反转特性指标
+        sector = get_sector()
         #combined_rank = (
         #    hurst.rank(mask=universe)
         #)
-        #pct_beta = Beta(window_length=21, mask=(universe))
+        pct_slope = Slope(window_length=21, mask=(universe))  #量和价格加速度
         risk_beta = 0.66 * RollingLinearRegressionOfReturns(
-            target=symbol(risk_benchmark),  # sid(8554),
-            returns_length=6,
+            target=symbol(risk_benchmark),
+            returns_length=5,
             regression_length=21,
-            # mask=long_short_screen
             mask=(universe),
         ).beta + 0.33 * 1.0
-        x = USEquityPricing.close
         returns = Returns(inputs=[USEquityPricing.close],
                 mask=universe,window_length=2)
-        returns.window_safe = True
-        risk_beta.window_safe = True
-        m = Markowitz(inputs=[returns,risk_beta],window_length=6,mask=universe)
+        #returns.window_safe = True
+        #risk_beta.window_safe = True
+        #m = Markowitz(inputs=[returns,risk_beta],window_length=6,mask=universe)
         columns= {
-                    #'hurst': hurst.downsample('week_start'),
-                    #'price_pct_beta' : pct_beta.pbeta,
-                    #'volume_pct_beta': pct_beta.vbeta,
-                    #'sector': sector.downsample('week_start'),
-                    #'market_beta': risk_beta,
-                    #'rank':combined_rank,
-                    #'returns':returns,
-                    'm' : m,
-                    #'testrank':hurst.rank(mask=universe)
-
+                    'hurst': hurst.downsample('week_start'),
+                    'price_pct_slope' : pct_slope.pslope,
+                    'volume_pct_slope': pct_slope.vslope,
+                    'sector': sector.downsample('month_start'),
+                    'market_beta': risk_beta,
+                    'returns':returns,
                  }
         return columns,universe

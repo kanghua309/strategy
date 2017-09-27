@@ -8,16 +8,14 @@ import cvxpy as cvx
 MAX_GROSS_LEVERAGE = 1.0
 NUM_LONG_POSITIONS = 19 #剔除risk_benchmark
 NUM_SHORT_POSITIONS = 0
-MAX_BETA_EXPOSURE = 0.20
+MAX_BETA_EXPOSURE = 0.50
 
 NUM_ALL_CANDIDATE = NUM_LONG_POSITIONS
 
-
-
-MAX_LONG_POSITION_SIZE = 3 * 1.0/(NUM_LONG_POSITIONS + NUM_SHORT_POSITIONS)
+MAX_LONG_POSITION_SIZE = 2 * 1.0/(NUM_LONG_POSITIONS + NUM_SHORT_POSITIONS)
 #MAX_SHORT_POSITION_SIZE = 2*1.0/(NUM_LONG_POSITIONS + NUM_SHORT_POSITIONS)
 
-MIN_LONG_POSITION_SIZE = 0.3 * 1.0/(NUM_LONG_POSITIONS + NUM_SHORT_POSITIONS)
+MIN_LONG_POSITION_SIZE = 0.5 * 1.0/(NUM_LONG_POSITIONS + NUM_SHORT_POSITIONS)
 MAX_SECTOR_EXPOSURE = 0.3
 
 
@@ -29,9 +27,7 @@ class BasicHedgeRiskManager(RiskManager):
 
     #@staticmethod #?
     def optimalize(self,candidates,factors):
-        print candidates.index
-        print "candidates len:", len(candidates),candidates
-        print "factors:",factors
+        print "Optimalize - candidates:",len(candidates),candidates
 
 
         candidates_len = candidates.index
@@ -41,7 +37,7 @@ class BasicHedgeRiskManager(RiskManager):
         constraints = [cvx.sum_entries(w) == 1.0 * MAX_GROSS_LEVERAGE, w >= 0.0]  # dollar-neutral long/short
         # constraints.append(cvx.sum_entries(cvx.abs(w)) <= 1)  # leverage constraint
         constraints.extend([w >= MIN_LONG_POSITION_SIZE, w <= MAX_LONG_POSITION_SIZE])  # long exposure
-        riskvec = candidates[factors['BETA']].fillna(1.0).as_matrix()                        # TODO
+        riskvec = candidates[factors['BETA']].fillna(1.0).as_matrix()             # TODO
         constraints.extend([riskvec * w <= MAX_BETA_EXPOSURE])                    # risk ?
         print "MIN_SHORT_POSITION_SIZE %s, MAX_SHORT_POSITION_SIZE %s,MAX_BETA_EXPOSURE %s" % (MIN_LONG_POSITION_SIZE, MAX_LONG_POSITION_SIZE, MAX_BETA_EXPOSURE)
         # 版块对冲当前，因为股票组合小，不合适

@@ -38,10 +38,10 @@ class HurstExp(CustomFactor):
         out[:] = hurst_exp_per_asset
            
 
-class Beta(CustomFactor):
+class Slope(CustomFactor):
     #print "--------------beta---------------"
     inputs = [USEquityPricing.close,USEquityPricing.volume]
-    outputs = ['pbeta','vbeta']
+    outputs = ['pslope','vslope']
     window_length = 252 #TODO FIX IT
     def _beta(self,ts):
         ts[np.isnan(ts)] = 0 #TODO FIX it ?
@@ -51,8 +51,8 @@ class Beta(CustomFactor):
     def compute(self, today, assets, out, close, volume):
         price_pct  = pd.DataFrame(close,  columns=assets).pct_change()[1:]
         volume_pct = pd.DataFrame(volume, columns=assets).pct_change()[1:]
-        out.pbeta[:] = price_pct.apply(self._beta)
-        out.vbeta[:] = volume_pct.apply(self._beta)
+        out.pslope[:] = price_pct.apply(self._beta)
+        out.vslope[:] = volume_pct.apply(self._beta)
         #out.dbeta[:] = np.abs(out.vbeta[:] - out.pbeta[:])
 
 class CrossSectionalReturns(CustomFactor):

@@ -58,7 +58,7 @@ def BasicFactorRegress(inputs, window_length, mask, trigger_date=None):
                 last_values.append(dataset[-1])
             return np.vstack(last_values).T
         def compute(self, today, assets,out,returns,*inputs):
-            print "------------------------------- BasicFactorRegress:",today
+            #print "------------------------------- BasicFactorRegress:",today,trigger_date
             if trigger_date != None and today != pd.Timestamp(trigger_date,tz='UTC'):  #仅仅是最重的预测factor给定时间执行了，其他的各依赖factor还是每次computer调用都执行，也流是每天都执行！ 不理想
                 return
             #if trigger_date != None:

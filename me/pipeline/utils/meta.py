@@ -15,7 +15,7 @@ def load_tushare_df(df_type):
     try:
         obj = pickle.load(open(file,"rb"))
     except:
-        print("---load in the fly",df_type)
+        #print("---load in the fly",df_type)
         if df_type == "basic":
            obj = ts.get_stock_basics()
         elif df_type == "sme":
@@ -31,6 +31,6 @@ def load_tushare_df(df_type):
             raise Exception("Error TSshare Type!!!")
         pickle.dump(obj,open(file,"wb",0))
     else:
-        print("***Read from file %s" % df_type)
+        #print("***Read from file %s" % df_type)
         pass
     return obj

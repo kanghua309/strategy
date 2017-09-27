@@ -16,9 +16,3 @@ class XieqiuExecutor(Executor):
     @property
     def portofolio(self):
         return self.broker.get_profolio_info()
-
-if __name__ == '__main__':
-   xqexec = XieqiuExecutor(account ='18618280998',password ='Threyear#3',protfolio='ZH1140387')
-   xqexec.login()
-   x= xqexec.portofolio
-   print x
