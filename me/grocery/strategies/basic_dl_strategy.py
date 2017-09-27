@@ -68,8 +68,17 @@ class DLStrategy(Strategy):
     def compute_allocation(self,data,pipeline_data):
         # print pipeline_data.loc['000018']
         # context.xueqiuLive.login()
+        print self.portfolio
+        xq_profolio_real = self.portfolio[self.portfolio['short_time'].isnull()]
+        short = {}
+        for index, value in xq_profolio_real.iterrows():
+            print index
+            short[index] = 0.0
+
         weights = pipeline_data.weights
-        return {},weights
+        print "short:",short
+        print weights
+        return short,weights.to_dict()
 
     def trade(self,shorts,longs):
         print "do sell ....."
@@ -92,7 +101,7 @@ class DLStrategy(Strategy):
         )
         private_universe = private_universe_mask(self.portfolio.index)  # 把当前组合的stock 包含在universe中
         last_price = USEquityPricing.close.latest >= 1.0  # 大于1元
-        universe = (universe & last_price) | private_universe
+        universe = (universe & last_price) & ~ private_universe
         # print "universe:",universe
         # Instantiate ranked factors
         returns = Returns(inputs=[USEquityPricing.close],mask=universe,window_length=2)
