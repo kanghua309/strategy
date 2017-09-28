@@ -17,6 +17,7 @@ from zipline.pipeline.factors import AverageDollarVolume, CustomFactor
 
 from me.pipeline.utils.meta import load_tushare_df
 
+'''
 def MarketCap():
     #print("==enter getMarketCap==")
     info=load_tushare_df("basic")
@@ -40,7 +41,7 @@ def MarketCap():
             #print "---------------MarketCap--------------", today
             out[:] =   close[-1] * self.outstanding(assets)
     return MarketCap()
-
+'''
 
 def Fundamental():
     columns = ['pe',  # 市盈率

@@ -88,7 +88,7 @@ class RevertStrategy(Strategy):
             vslope = row.volume_pct_slope
             pslope = row.price_pct_slope
             if hurst <= 0.3:  #均值反转特性
-                if vslope < 0 and vslope < pslope:  # 先买均值回归的！ 安全！！！
+                if vslope < 0 and vslope < pslope:  # 有加速效应
                     print("++++++++++++++++++++++++++Info buy sym(%s) for mean revert" % (index))
                     profolio_hold_index = profolio_hold_index.insert(0, index)
 
