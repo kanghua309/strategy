@@ -87,7 +87,7 @@ def initialize(context):
     #__build_factor_basic_strategy(context)
     __build_deeplearn_strategy(context)
     attach_pipeline(make_pipeline(context), 'my_pipeline')
-    schedule_function(rebalance, date_rules.week_end(days_offset=0), half_days=True)  # 周天 ? 周5 ！！！
+    schedule_function(rebalance, date_rules.week_end(days_offset=0), half_days=True)
     # record my portfolio variables at the end of day
     schedule_function(func=recording_statements,
                       date_rule=date_rules.every_day(),
