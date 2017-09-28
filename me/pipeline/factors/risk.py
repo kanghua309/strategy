@@ -57,9 +57,9 @@ def Markowitz(inputs, window_length, mask, trigger_date=None):
             risk = cvx.quad_form(w, Sigma)  # expected_variance => w.T*C*w =  quad_form(w, C)
             #print returns
             avg_rets = returns.mean()
-            #print "avg_rets:", avg_rets
+            print "avg_rets:", avg_rets
             #target_ret = avg_rets *0.01  #TODO
-            target_ret = 0.01  #TODO
+            target_ret = 0.5  #TODO
 
             mu = np.array([target_ret] * len(cov_mat))
             expected_return = np.reshape(mu,(-1, 1)).T * w  # w is a vector of stock holdings as fractions of total assets.
