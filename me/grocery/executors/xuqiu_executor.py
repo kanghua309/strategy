@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from executor import Executor
+from .executor import Executor
 from me.grocery.broker.xueqiu import XueqiuLive
 class XieqiuExecutor(Executor):
     def __init__(self,account,password,portfolio):

@@ -23,7 +23,7 @@ from me.pipeline.factors.tsfactor import Fundamental
 from me.pipeline.filters.universe import make_china_equity_universe, default_china_equity_universe_mask, \
     private_universe_mask
 
-from strategy import Strategy
+from .strategy import Strategy
 
 
 risk_benchmark = '000001'
@@ -44,10 +44,10 @@ class FactorStrategy(Strategy):
             current_price = data.current(symbol(index), 'price')
             # print "Rebalance - index, keep_price, current_price"
             if keep_price / current_price > 1.10:
-                print "%s has down to stop limit, sell it - for %s,%s " % (index, keep_price, current_price)
+                print ("%s has down to stop limit, sell it - for %s,%s " % (index, keep_price, current_price))
                 stop_dict[index] = 0.0
             if keep_price / current_price < 0.90:
-                print "%s has up to expected price , sell it - for %s,%s" % (index, keep_price, current_price)
+                print ("%s has up to expected price , sell it - for %s,%s" % (index, keep_price, current_price))
                 stop_dict[index] = 0.0
 
         return stop_dict
@@ -59,26 +59,26 @@ class FactorStrategy(Strategy):
             lastdt = profolio[index]
             # print "Rebalance - index, keep_price, current_price"
             if datetime.now() - lastdt > timedelta(weeks=2):
-                print "%s has expired , sell it - for %s,%s" % (index, datetime.now(), lastdt)
+                print ("%s has expired , sell it - for %s,%s" % (index, datetime.now(), lastdt))
                 stop_dict[index] = 0.0
         return stop_dict
 
     def compute_allocation(self,data,pipeline_data):
         # print pipeline_data.loc['000018']
         # context.xueqiuLive.login()
-        print "Rebalance - Current xq profolio"
+        print ("Rebalance - Current xq profolio")
         # print len(self.portfolio), self.portfolio
 
         xq_profolio_real = self.portfolio[self.portfolio['short_time'].isnull()]
         remove_dict = self.__check_stop_limit(data)
-        print "Rebalance - remove_stock for stop:", remove_dict
+        print ("Rebalance - remove_stock for stop:", remove_dict)
         _remove = self.__check_expired_limit(data)
         remove_dict.update(_remove)  # TODO
-        print "Rebalance - remove_stock for expire:", remove_dict
+        print ("Rebalance - remove_stock for expire:", remove_dict)
         profolio_hold_index = xq_profolio_real.index.difference(remove_dict)
 
         # print "profolio_hold_index:",profolio_hold_index
-        print "Rebalance - Profolio_hold_index now:", profolio_hold_index
+        print ("Rebalance - Profolio_hold_index now:", profolio_hold_index)
         profolio_hold = pipeline_data.loc[profolio_hold_index]
         weights = self.risk_manager.optimalize(profolio_hold,
                                                {'ALPHA': 'predict', 'BETA': 'market_beta', 'SECTOR': 'sector',
@@ -86,9 +86,9 @@ class FactorStrategy(Strategy):
         return remove_dict, weights
 
     def trade(self,shorts,longs):
-        print "do sell ....."
+        print ("do sell .....")
         self.executor.orders(shorts)
-        print "do buy ....."
+        print ("do buy .....")
         self.executor.orders(longs)
         pass
 

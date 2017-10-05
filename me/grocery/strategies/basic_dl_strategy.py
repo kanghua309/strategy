@@ -25,7 +25,7 @@ from me.pipeline.filters.universe import make_china_equity_universe, default_chi
 from me.pipeline.factors.risk import Markowitz
 from me.pipeline.factors.dl import RNNPredict
 
-from strategy import Strategy
+from .strategy import Strategy
 
 
 risk_benchmark = '000001'
@@ -46,10 +46,10 @@ class DLStrategy(Strategy):
             current_price = data.current(symbol(index), 'price')
             # print "Rebalance - index, keep_price, current_price"
             if keep_price / current_price > 1.10:
-                print "%s has down to stop limit, sell it - for %s,%s " % (index, keep_price, current_price)
+                print ("%s has down to stop limit, sell it - for %s,%s " % (index, keep_price, current_price))
                 stop_dict[index] = 0.0
             if keep_price / current_price < 0.90:
-                print "%s has up to expected price , sell it - for %s,%s" % (index, keep_price, current_price)
+                print ("%s has up to expected price , sell it - for %s,%s" % (index, keep_price, current_price))
                 stop_dict[index] = 0.0
 
         return stop_dict
@@ -61,29 +61,27 @@ class DLStrategy(Strategy):
             lastdt = profolio[index]
             # print "Rebalance - index, keep_price, current_price"
             if datetime.now() - lastdt > timedelta(weeks=2):
-                print "%s has expired , sell it - for %s,%s" % (index, datetime.now(), lastdt)
+                print ("%s has expired , sell it - for %s,%s" % (index, datetime.now(), lastdt))
                 stop_dict[index] = 0.0
         return stop_dict
 
     def compute_allocation(self,data,pipeline_data):
         # print pipeline_data.loc['000018']
         # context.xueqiuLive.login()
-        print self.portfolio
         xq_profolio_real = self.portfolio[self.portfolio['short_time'].isnull()]
         short = {}
         for index, value in xq_profolio_real.iterrows():
-            print index
             short[index] = 0.0
 
         weights = pipeline_data.weights
-        print "short:",short
-        print weights
+        print ("short:",short)
+        print (weights)
         return short,weights.to_dict()
 
     def trade(self,shorts,longs):
-        print "do sell ....."
+        print ("do sell .....")
         self.executor.orders(shorts)
-        print "do buy ....."
+        print ("do buy .....")
         self.executor.orders(longs)
         pass
 

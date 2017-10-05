@@ -2,7 +2,7 @@
 import pandas as pd
 import numpy as np
 
-from riskmanager import RiskManager
+from .riskmanager import RiskManager
 import cvxpy as cvx
 
 MAX_GROSS_LEVERAGE = 1.0
@@ -27,7 +27,7 @@ class BasicHedgeRiskManager(RiskManager):
 
     #@staticmethod #?
     def optimalize(self,candidates,factors):
-        print "Optimalize - candidates:",len(candidates),candidates
+        print ("Optimalize - candidates:",len(candidates),candidates)
 
 
         candidates_len = candidates.index
@@ -39,7 +39,7 @@ class BasicHedgeRiskManager(RiskManager):
         constraints.extend([w >= MIN_LONG_POSITION_SIZE, w <= MAX_LONG_POSITION_SIZE])  # long exposure
         riskvec = candidates[factors['BETA']].fillna(1.0).as_matrix()             # TODO
         constraints.extend([riskvec * w <= MAX_BETA_EXPOSURE])                    # risk ?
-        print "MIN_SHORT_POSITION_SIZE %s, MAX_SHORT_POSITION_SIZE %s,MAX_BETA_EXPOSURE %s" % (MIN_LONG_POSITION_SIZE, MAX_LONG_POSITION_SIZE, MAX_BETA_EXPOSURE)
+        print ("MIN_SHORT_POSITION_SIZE %s, MAX_SHORT_POSITION_SIZE %s,MAX_BETA_EXPOSURE %s" % (MIN_LONG_POSITION_SIZE, MAX_LONG_POSITION_SIZE, MAX_BETA_EXPOSURE))
         # 版块对冲当前，因为股票组合小，不合适
         sector_dist = {}
         idx = 0
@@ -49,17 +49,17 @@ class BasicHedgeRiskManager(RiskManager):
                 sector_dist[classid] = _
                 sector_dist[classid].append(idx)
             idx += 1
-        print"sector size :", len(sector_dist)
+        print("sector size :", len(sector_dist))
         for k, v in sector_dist.iteritems():
             constraints.append(cvx.sum_entries(w[v]) <  (1 + MAX_SECTOR_EXPOSURE) / len(sector_dist))
             constraints.append(cvx.sum_entries(w[v]) >= (1 - MAX_SECTOR_EXPOSURE) / len(sector_dist))
         prob = cvx.Problem(objective, constraints)
         prob.solve()
         if prob.status != 'optimal':
-            print "Optimal failed %s , do nothing" % prob.status
+            print ("Optimal failed %s , do nothing" % prob.status)
             return pd.Series()
             # raise SystemExit(-1)
-        print np.squeeze(np.asarray(w.value))  # Remove single-dimensional entries from the shape of an array
+        print (np.squeeze(np.asarray(w.value)))  # Remove single-dimensional entries from the shape of an array
         return pd.Series(data=np.squeeze(np.asarray(w.value)), index=candidates.index)
 
 
