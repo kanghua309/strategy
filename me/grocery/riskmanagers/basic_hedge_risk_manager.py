@@ -29,8 +29,8 @@ class BasicHedgeRiskManager(RiskManager):
     def optimalize(self,candidates,factors):
         print ("Optimalize - candidates:",len(candidates),candidates)
 
-        candidates_len = candidates.index
-        w = cvx.Variable(len(candidates_len))
+        candidates_len = len(candidates.index)
+        w = cvx.Variable(candidates_len)
         # objective = cvx.Maximize(df.pred.as_matrix() * w)  # mini????
         objective = cvx.Maximize(candidates[factors['ALPHA']].as_matrix() * w)           #FIX IT
         constraints = [cvx.sum_entries(w) == 1.0 * MAX_GROSS_LEVERAGE, w >= 0.0]  # dollar-neutral long/short

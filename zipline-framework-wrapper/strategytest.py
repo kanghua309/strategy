@@ -18,7 +18,7 @@ from zipline.api import (
     attach_pipeline,
 )
 from zipline.pipeline import Pipeline
-from me.grocery.strategies.xuqiu_basic_revert_strategy import RevertStrategy
+#from me.grocery.strategies.xuqiu_basic_revert_strategy import RevertStrategy
 from me.grocery.strategies.basic_factor_strategy_example import BasicFactorStrategy
 from me.grocery.strategies.xuqiu_basic_dl_strategy import DLStrategy
 
