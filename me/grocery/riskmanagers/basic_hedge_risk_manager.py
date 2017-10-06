@@ -52,7 +52,7 @@ class BasicHedgeRiskManager(RiskManager):
                 sector_dist[classid].append(idx)
             idx += 1
         print("sector size :", len(sector_dist))
-        for k, v in sector_dist.iteritems():
+        for k, v in sector_dist.items():
             constraints.append(cvx.sum_entries(w[v]) <  (1 + MAX_SECTOR_EXPOSURE) / len(sector_dist))
             constraints.append(cvx.sum_entries(w[v]) >= (1 - MAX_SECTOR_EXPOSURE) / len(sector_dist))
         prob = cvx.Problem(objective, constraints)
