@@ -44,14 +44,14 @@ def universe_filter(smoothing_func = None):
 
     #func = lambda f: f.downsample('month_start')
     if smoothing_func != None:
-        factors = { id:smoothing_func(factors[id]) for id in factors.iterkeys() }
+        factors = { id:smoothing_func(factors[id]) for id in factors.keys() }
     #print factors
     factors['MarketCap'] = factors['MarketCap'] > MARKET_CAP_DOWNLIMIT
     factors['ADV_adj']   = factors['ADV_adj']   > ADV_ADJ_DOWNLIMIT
     factors['Sector']    = factors['Sector'].notnull()
 
     filters = None
-    for value in factors.itervalues():
+    for value in factors.values():
         if filters == None:
            filters = value
         else:
@@ -100,7 +100,7 @@ def sector_filter(tradeable_count,sector_exposure_limit,smoothing_func = None):
 
     #print ("tradeable_count %s , get_sector_size %s , industry threashold %s:" % (tradeable_count,sector_size,threshold))
     filters = None
-    for industry,ino in industry_class.iteritems():
+    for industry,ino in industry_class.items():
         #print industry,ino,industry_class[industry]
         mask=sector_factor.eq(industry_class[industry])
         if smoothing_func != None:

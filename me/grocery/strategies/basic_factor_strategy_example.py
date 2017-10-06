@@ -108,7 +108,7 @@ class BasicFactorStrategy(Strategy):
         factors_pipe['Returns'] = Returns(inputs=[USEquityPricing.close],
                                           mask=universe, window_length=5)
         # Instantiate ranked factors
-        for name, f in factors.iteritems():
+        for name, f in factors.items():
             f.window_safe = True
             factors_pipe[name] = f.rank(mask=universe) #rank 使用相对顺序，而不是绝对值，避免自相似性
 
