@@ -140,7 +140,7 @@ class XueqiuLive:
                 if stock not in tmpdict['short_time']:  # 只关心最后一次卖出时间
                     tmpdict['short_time'][stock] = datetime.utcfromtimestamp(row['created_at'] / 1000)
             else:
-                if stock not in tmpdict['long_time']:  # 只关心最后一次买入
+                if stock not in tmpdict['long_time']:   # 只关心最后一次买入
                     tmpdict['long_time'][stock] = datetime.utcfromtimestamp(row['created_at'] / 1000)
             if tmpdict['keep_price'].has_key(stock):
                 keep_price = tmpdict['keep_price'][stock]  # 更新最早价格

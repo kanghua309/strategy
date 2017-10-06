@@ -38,7 +38,7 @@ def Markowitz(inputs, window_length, mask, trigger_date=None):
             #print "------------------------------- Markowitz:",today
             if trigger_date != None and today != pd.Timestamp(trigger_date,tz='UTC'):  # 仅仅是最重的预测factor给定时间执行了，其他的各依赖factor还是每次computer调用都执行，也流是每天都执行！ 不理想
                 return
-            print "Markowitz factor:",today
+            print ("Markowitz factor:",today)
 
             #for stock in assets:
             #    stock = sid(stock).symbol
@@ -47,7 +47,7 @@ def Markowitz(inputs, window_length, mask, trigger_date=None):
             gamma.value = 1  # gamma is a Parameter that trades off risk and return.
             returns = np.nan_to_num(returns.T)  # time,stock to stock,time
             # [[1 3 2] [3 2 1]] = > [[1 3] [3 2] [2 1]]
-            print "Markowitz return ...\n",  returns
+            print ("Markowitz return ...\n",  returns)
             cov_mat = np.cov(returns)
             #print "cov of return:\n", cov_mat
             Sigma = cov_mat
@@ -57,7 +57,7 @@ def Markowitz(inputs, window_length, mask, trigger_date=None):
             risk = cvx.quad_form(w, Sigma)  # expected_variance => w.T*C*w =  quad_form(w, C)
             #print returns
             avg_rets = returns.mean()
-            print "avg_rets:", avg_rets
+            print ("avg_rets:", avg_rets)
             #target_ret = avg_rets *0.01  #TODO
             target_ret = 0.5  #TODO
 
@@ -70,7 +70,7 @@ def Markowitz(inputs, window_length, mask, trigger_date=None):
             sector_dist = {}
             idx = 0
             class_nos = get_sectors_no(assets)
-            print "Markowitz class_nos:",class_nos
+            print ("Markowitz class_nos:",class_nos)
             for classid in class_nos:
                 if classid not in sector_dist:
                     _ = []
@@ -85,10 +85,10 @@ def Markowitz(inputs, window_length, mask, trigger_date=None):
             prob = cvx.Problem(objective, constraints)
             prob.solve()
             if prob.status != 'optimal':
-                print "Optimal failed %s , do nothing" % prob.status
+                print ("Optimal failed %s , do nothing" % prob.status)
                 return None
                 # raise SystemExit(-1)
-            print "Markowit weight",np.squeeze(np.asarray(w.value))  # Remo
+            print ("Markowit weight",np.squeeze(np.asarray(w.value)))  # Remo
             out[:] = np.squeeze(np.asarray(w.value)) #每行中的列1
 
     return Markowitz(inputs = inputs, window_length = window_length, mask = mask)

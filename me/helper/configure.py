@@ -5,7 +5,7 @@ import datetime
 import json
 import codecs
 
-from log import log
+from .log import log
 
 
 
@@ -22,8 +22,7 @@ def read_config(path):
                 if type(v) is int:
                     log.warn('配置文件的值最好使用双引号包裹，使用字符串类型，否则可能导致不可知的问题')
             return config
-        except ValueError,e:
-            print e
+        except ValueError as e:
             log.error('配置文件格式有误，请勿使用记事本编辑，推荐使用 notepad++ 或者 sublime text')
 
 

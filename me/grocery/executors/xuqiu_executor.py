@@ -9,7 +9,9 @@ class XieqiuExecutor(Executor):
         self.broker.login()
 
     def orders(self,targets):
-        raise NotImplementedError()
+        for stock in targets:
+            self.broker.adjust_weight(stock,targets[stock] * 100)
+
     def balance(self):
         pass
 
