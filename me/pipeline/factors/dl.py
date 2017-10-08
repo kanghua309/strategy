@@ -38,7 +38,7 @@ def RNNPredict(mask,trigger_date=None):
             df = df.set_index('date')
             #print df.head(10)
             #print "-----------read from sql---------"
-            new_index = [sid(asset).symbol + "_c1_c0" for asset in assets]
+            new_index = [sid(asset).symbol + "return" for asset in assets]
             #print "new_index:",new_index
             df = df.reindex(columns = new_index)
             #print df.head(10)
