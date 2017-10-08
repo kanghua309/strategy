@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 import tushare as ts
 # from sqlalchemy import create_engine
 import sqlite3
