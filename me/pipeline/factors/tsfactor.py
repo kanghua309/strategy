@@ -42,8 +42,11 @@ def MarketCap():
             out[:] =   close[-1] * self.outstanding(assets)
     return MarketCap()
 '''
+# can be used outside algo scope - give your asset_finder
+def Fundamental(asset_finder = None):
 
-def Fundamental():
+    def _sid(sid):
+        return asset_finder.retrieve_asset(sid)
     columns = ['pe',  # 市盈率
                'outstanding',  # 流通股本(亿)
                'totals',  # 总股本(亿)
@@ -71,7 +74,10 @@ def Fundamental():
         window_length = 1
         window_safe = True
         def handle(self, assets):
-            stocks = [sid(msid).symbol for msid in assets]
+            if asset_finder != None:
+                stocks = [_sid(msid).symbol for msid in assets]
+            else:
+                stocks = [sid(msid).symbol for msid in assets]
             #print stocks
             #print info.ix[stocks][columns]
             return info.ix[stocks][columns]

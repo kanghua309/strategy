@@ -19,9 +19,19 @@ import os
 import re
 DEFAULT_CAPITAL_BASE = 1e5
 
+from zipline.pipeline.factors import CustomFactor
 from zipline.data.bundles import register
 from zipline.data.bundles.viadb import viadb
 
+
+
+class DV2(CustomFactor):
+    inputs = [USEquityPricing.close,USEquityPricing.high, USEquityPricing.low]
+    window_length = 3
+    def compute(self, today, assets, out, close, high, low):
+        dv = 100 * ((close / (0.5 * ( high + low)))-1)
+        dv2 = (dv[1:] + dv[:-1]) / 2
+        out[:] = dv2[-1]
 
 N = 10
 def make_pipeline():
@@ -30,11 +40,13 @@ def make_pipeline():
     recent_returns = Returns(window_length=N, mask=high_dollar_volume)
     low_returns = recent_returns.percentile_between(0, 10)
     high_returns = recent_returns.percentile_between(N, 100)
+    dv2 = DV2()
     pipe_columns = {
         'low_returns': low_returns,
         'high_returns': high_returns,
         'recent_returns': recent_returns,
-        'dollar_volume': dollar_volume
+        'dollar_volume': dollar_volume,
+        'dv2':dv2
     }
     pipe_screen = (low_returns | high_returns)
     pipe = Pipeline(columns=pipe_columns, screen=pipe_screen)

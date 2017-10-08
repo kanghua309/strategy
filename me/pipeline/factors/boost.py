@@ -121,3 +121,31 @@ class SimpleBookToPrice(CustomFactor):
     def compute(self, today, assets, out, pb):
         out[:] = 1 / pb
 
+#Rank of Last Close Price vs Previous Prices - (percentage rank DV2)
+class PRDV(CustomFactor):
+    inputs = [USEquityPricing.close, USEquityPricing.high, USEquityPricing.low]
+    window_length = 3
+
+    def compute(self, today, assets, out, close, high, low):
+        dv = 100 * ((close / (0.5 * (high + low))) - 1)
+        dv2 = (dv[1:] + dv[:-1]) / 2
+        out[:] = (dv2.argsort(axis=0).argsort(axis=0)[-1] + 1) * 100 / len(dv2)
+
+
+class DV2(CustomFactor):
+    inputs = [USEquityPricing.close, USEquityPricing.high, USEquityPricing.low]
+    window_length = 3
+
+    def compute(self, today, assets, out, close, high, low):
+        dv = 100 * ((close / (0.5 * (high + low))) - 1)
+        dv2 = (dv[1:] + dv[:-1]) / 2
+        out[:] = dv2[-1]
+
+
+#but we don't actually need to! Factor has a log1p method that behaves identically to our custom LogReturns.
+class LogReturns(CustomFactor):
+    #inputs = [Returns(window_length=2)]
+    window_length = 1
+    window_safe = True
+    def compute(self, today, assets, out, returns):
+        out[:] = np.log( (returns+1.) )

@@ -4,6 +4,7 @@ from zipline.pipeline.engine import (
     ExplodingPipelineEngine,
     SimplePipelineEngine,
 )
+from zipline.pipeline.factors import CustomFactor
 from zipline.algorithm import TradingAlgorithm
 from zipline.data.bundles.core import load
 from zipline.data.data_portal import DataPortal
