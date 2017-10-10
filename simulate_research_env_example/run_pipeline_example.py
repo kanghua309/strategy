@@ -1,17 +1,13 @@
 from zipline.pipeline import Pipeline, engine
 from zipline.pipeline.factors import AverageDollarVolume, Returns
 from zipline.pipeline.engine import (
-    ExplodingPipelineEngine,
     SimplePipelineEngine,
 )
-from zipline.algorithm import TradingAlgorithm
 from zipline.data.bundles.core import load
-from zipline.data.data_portal import DataPortal
 from zipline.finance.trading import TradingEnvironment
 from zipline.pipeline.data import USEquityPricing
 from zipline.pipeline.loaders import USEquityPricingLoader
 from zipline.utils.calendars import get_calendar
-from zipline.utils.factory import create_simulation_parameters
 from zipline.utils.cli import Date, Timestamp
 
 import pandas as pd
@@ -24,7 +20,7 @@ from zipline.data.bundles import register
 from zipline.data.bundles.viadb import viadb
 
 
-
+# custom factor
 class DV2(CustomFactor):
     inputs = [USEquityPricing.close,USEquityPricing.high, USEquityPricing.low]
     window_length = 3
@@ -54,7 +50,7 @@ def make_pipeline():
 
 my_pipe = make_pipeline()
 
-############################################# bundle #############################################
+############################################# china astock bundle ##############################################
 equities1={}
 register(
    'my-db-bundle',  # name this whatever you like
@@ -89,17 +85,6 @@ trading_environment = TradingEnvironment(bm_symbol=None,
                                          trading_calendar=trading_calendar,
                                          asset_db_path=connstr)
 
-'''
-first_trading_day = \
-    bundle_data.equity_minute_bar_reader.first_trading_day
-data = DataPortal(
-    trading_environment.asset_finder, get_calendar("SHSZ"),
-    first_trading_day=first_trading_day,
-    equity_minute_reader=bundle_data.equity_minute_bar_reader,
-    equity_daily_reader=bundle_data.equity_daily_bar_reader,
-    adjustment_reader=bundle_data.adjustment_reader,
-)
-'''
 ############################################# choose_loader #############################################
 
 pipeline_loader = USEquityPricingLoader(
@@ -117,17 +102,9 @@ def choose_loader(column):
 #data_frequency = 'daily',
 #capital_base = DEFAULT_CAPITAL_BASE
 
-start = '2015-9-1'
-end = '2015-9-9'
-'''
-sim_params = create_simulation_parameters(
-             capital_base=capital_base,
-             start=Date(tz='utc', as_timestamp=True).parser(start),
-             end=Date(tz='utc', as_timestamp=True).parser(end),
-             data_frequency=data_frequency,
-             trading_calendar=trading_calendar,
-           )
-'''
+start = '2015-9-1'  # 必须在国内交易日
+end   = '2017-9-9'  # 必须在国内交易日
+
 #print Date(tz='utc', as_timestamp=True).parser(start)
 #perf_tracker = None
 # Pull in the environment's new AssetFinder for quick reference

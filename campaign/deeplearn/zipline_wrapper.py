@@ -42,7 +42,7 @@ def rebalance(context, data):
 
     shorts, longs = context.strategy.compute_allocation(data,pipeline_data)
     print ("to trade:",shorts,longs)
-    #context.strategy.trade(shorts,longs)
+    context.strategy.trade(shorts,longs)
     pass
 
 
