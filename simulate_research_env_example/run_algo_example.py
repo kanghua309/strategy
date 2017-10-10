@@ -139,7 +139,6 @@ def initialize(context):
 
 def handle_data(context, data):
     print symbol('000001'),data.current(symbol('000001'), 'price')
-    order(symbol('000001'), 1)
 
 def before_trading_start(context, data):
     context.pipeline_data = pipeline_output('my_pipeline')
