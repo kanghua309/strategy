@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 from zipline.pipeline import Pipeline, engine
 from zipline.pipeline.factors import AverageDollarVolume, Returns
 from zipline.pipeline.engine import (

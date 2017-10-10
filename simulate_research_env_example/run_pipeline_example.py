@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 from zipline.pipeline import Pipeline, engine
 from zipline.pipeline.factors import AverageDollarVolume, Returns
 from zipline.pipeline.engine import (
@@ -103,7 +105,7 @@ def choose_loader(column):
 #capital_base = DEFAULT_CAPITAL_BASE
 
 start = '2015-9-1'  # 必须在国内交易日
-end   = '2017-9-9'  # 必须在国内交易日
+end   = '2017-9-8'  # 必须在国内交易日
 
 #print Date(tz='utc', as_timestamp=True).parser(start)
 #perf_tracker = None
