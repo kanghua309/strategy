@@ -164,7 +164,7 @@ def train(InputDF, TargetDF):
                                                           early_stopping_rounds=1000)
     # 进行训练
     regressor = SKCompat(learn.Estimator(model_fn=lstm_model,
-                                         model_dir="Models/model_0",
+                                         #model_dir="Models/model_0",
                                          config=tf.contrib.learn.RunConfig(
                                              save_checkpoints_steps=100,
                                              save_checkpoints_secs=None,
