@@ -103,7 +103,7 @@ def train(InputDF, TargetDF):
     print np.shape(train_X), np.shape(train_y)
     print "Train Set <X:y> shape"
     print "Train Data Count:%s , Feather Count:%s , Stock Count:%s" % (
-        len(train_X), num_features, num_stocks)
+        len(train_X), num_features, num_stocks)  # 3300 个股票日？ 股票没有那么多,500个
 
     NUM_TRAIN_BATCHES = int(len(train_X) / BATCH_SIZE)
     ATTN_LENGTH = 10
@@ -164,7 +164,7 @@ def train(InputDF, TargetDF):
                                                           early_stopping_rounds=1000)
     # 进行训练
     regressor = SKCompat(learn.Estimator(model_fn=lstm_model,
-                                         # model_dir="Models/model_0",
+                                         #model_dir="Models/model_0",
                                          config=tf.contrib.learn.RunConfig(
                                              save_checkpoints_steps=100,
                                              save_checkpoints_secs=None,
