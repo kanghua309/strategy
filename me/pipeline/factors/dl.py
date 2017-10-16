@@ -4,17 +4,15 @@ Created on Wed May 17 13:42:21 2017
 
 @author: kanghua
 """
-import numpy as np
-import pandas as pd
-import os
+import sqlite3
 
+import os
+import pandas as pd
 from zipline.api import (
-    symbol,
     sid,
 )
-from zipline.pipeline.data import USEquityPricing
 from zipline.pipeline.factors import CustomFactor
-import sqlite3
+
 
 def RNNPredict(mask,trigger_date=None,source='History.db'):
     class RNNPredict(CustomFactor):
@@ -38,5 +36,6 @@ def RNNPredict(mask,trigger_date=None,source='History.db'):
             new_index = [sid(asset).symbol + "_return" for asset in assets]
             df = df.reindex(columns = new_index)
             out[:] = df.ix[0].values
-            print "RNNpredict:",out
+            print "RNNpredict:", today, out
+
     return RNNPredict(mask=mask)

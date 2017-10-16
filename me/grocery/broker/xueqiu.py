@@ -1,14 +1,11 @@
 # -*- coding: utf-8 -*-
 
-import math
-from itertools import chain
-import numpy as np
 # import pandas.io.data as web
-import pandas_datareader.data as web
 # from  pandas.stats.api import ols
-from datetime import timedelta, date, datetime
-import pandas as pd
+from datetime import datetime
+
 import easytrader
+import pandas as pd
 
 '''
 def sell_xq_all(context):
@@ -30,8 +27,7 @@ def sell_batch_xq(context,stocks):
         context.user.adjust_weight(stock, 0.0)
 '''
 class XueqiuLive:
-
-    def __init__(self,user,account,password,portfolio_code,placeholder = '000001'):
+    def __init__(self, user, account, password, portfolio_code, placeholder=None):
         self.exchange = 'xq'
         self.user = user
         self.account = account
@@ -55,7 +51,8 @@ class XueqiuLive:
         w  =  df['market_value']/df['market_value'].sum()
         s  = pd.Series(w.values,index = ds.values)
         try:
-            s = s.drop(self.placeholder)
+            if self.placeholder != None:
+                s = s.drop(self.placeholder)
         except:
             pass
         return s
@@ -97,7 +94,8 @@ class XueqiuLive:
             tmpdict[stock] = (net * row['price'] + row['prev_volume'] * keep_price) / row['volume']
         s = pd.Series(tmpdict)
         try:
-            s = s.drop(self.placeholder)
+            if self.placeholder != None:
+                s = s.drop(self.placeholder)
         except:
             pass
         return s
@@ -122,7 +120,8 @@ class XueqiuLive:
 
         s = pd.Series(tmpdict)
         try:
-            s = s.drop(self.placeholder)
+            if self.placeholder != None:
+                s = s.drop(self.placeholder)
         except:
             pass
         return s
@@ -152,7 +151,8 @@ class XueqiuLive:
                     'volume']  # 不断更新
         s = pd.DataFrame(tmpdict)
         try:
-            s = s.drop(self.placeholder)
+            if self.placeholder != None:
+                s = s.drop(self.placeholder)
         except:
             pass
         return s

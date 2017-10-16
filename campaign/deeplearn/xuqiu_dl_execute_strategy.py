@@ -1,31 +1,16 @@
 # -*- coding: utf-8 -*-
 
-from zipline.pipeline.data import USEquityPricing
 from zipline.api import (
     symbol,
-    get_datetime,
 )
-
-import numpy as np
-import itertools
-import statsmodels.api as sm
-from statsmodels import regression,stats
-import scipy
-
-from datetime import timedelta, datetime
 from zipline.pipeline.data import USEquityPricing
-from zipline.pipeline.factors import RollingLinearRegressionOfReturns,Latest,Returns
-from me.pipeline.classifiers.tushare.sector import get_sector
-from me.pipeline.factors.boost import HurstExp,Slope,SimpleBookToPrice,SimpleMomentum
-from me.pipeline.factors.alpha101 import Alpha5,Alpha8,Alpha9
-from me.pipeline.factors.ml import BasicFactorRegress
-from me.pipeline.factors.tsfactor import Fundamental
-from me.pipeline.filters.universe import make_china_equity_universe, default_china_equity_universe_mask, \
-    private_universe_mask
-from me.pipeline.factors.risk import Markowitz
-from me.pipeline.factors.dl import RNNPredict
+from zipline.pipeline.factors import RollingLinearRegressionOfReturns, Returns
 
 from me.grocery.strategies.strategy import Strategy
+from me.pipeline.classifiers.tushare.sector import get_sector
+from me.pipeline.factors.dl import RNNPredict
+from me.pipeline.filters.universe import make_china_equity_universe, default_china_equity_universe_mask, \
+    private_universe_mask
 
 risk_benchmark = '000001'
 class DLExampleStrategy(Strategy):
@@ -43,12 +28,17 @@ class DLExampleStrategy(Strategy):
         shorts = {}
         for index, value in xq_profolio_real.iterrows():
             shorts[index] = 0.0
-
+        print "pipeline_data ---------------------------------------------- "
+        print pipeline_data
         df = pipeline_data.sort_values(axis=0, by='predict', ascending=False)
-        # print "profolio_hold_index:",profolio_hold_index
+        print "--------------------------------------"
+        print df
+        print df[:self.portfolio_contain_size],
         weights = self.risk_manager.optimalize(df[:self.portfolio_contain_size],
                                                {'ALPHA': 'predict', 'BETA': 'market_beta', 'SECTOR': 'sector',
                                                 "RETURNS": 'returns'})  # 作为参数优化的必备项
+        print "--------------------------------------"
+
         if len(weights) == 0:
             print("Portofolio optimalize failed ,so do nothing")
             return {}, {}
@@ -58,7 +48,7 @@ class DLExampleStrategy(Strategy):
         print ("do sell .....",shorts)
         self.executor.orders(shorts)
         print ("do buy .....", longs)
-        self.executor.orders(longs)
+        # self.executor.orders(longs)
         pass
 
     def portfolio(self):
