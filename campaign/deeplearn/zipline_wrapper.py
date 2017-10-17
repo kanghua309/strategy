@@ -32,7 +32,7 @@ def rebalance(context, data):
     #print context.pipeline_data
     print ("today 0 :", type(get_datetime()), get_datetime(), type(context.sim_params.end_session),
            context.sim_params.end_session.day)
-    if (context.sim_params.end_session.day != get_datetime().day):  # 只在最后一个周一开盘前运行
+    if (context.sim_params.end_session.day != get_datetime().day):  # 但只有最后一天运行
         return
     print ("today 1 :", get_datetime())
 
@@ -51,7 +51,6 @@ def __build_deeplearn_strategy(context):
     print ("config:",config)
     executor = XieqiuExecutor(account=config['account'], password=config['passwd'], portfolio=config['portfolio'])
     executor.login()
-    #riskmanger = BasicHedgeRiskManager()
     riskmanger = BasicHedgeRiskManager()
     context.strategy = DLExampleStrategy(executor, riskmanger,str(context.sim_params.end_session)[:10])
 
