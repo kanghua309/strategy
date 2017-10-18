@@ -12,11 +12,8 @@ from zipline.pipeline.factors import RollingLinearRegressionOfReturns, Returns
 
 from me.grocery.strategies.strategy import Strategy
 from me.pipeline.classifiers.tushare.sector import get_sector
-from me.pipeline.filters.universe import make_china_equity_universe, default_china_equity_universe_mask, \
-    private_universe_mask
 
-RISK_BENCHMARK = '000001'
-
+RISK_BENCHMARK = '000001'  # 平安作为对比股
 
 def RNNPredict(mask, trigger_date=None, source='predict.csv'):
     class RNNPredict(CustomFactor):
@@ -68,9 +65,9 @@ class DLExampleStrategy(Strategy):
 
     def trade(self,shorts,longs):
         print ("do sell .....",shorts)
-        #self.executor.orders(shorts)
+        self.executor.orders(shorts)
         print ("do buy .....", longs)
-        # self.executor.orders(longs)
+        self.executor.orders(longs)
         pass
 
     def portfolio(self):
@@ -78,6 +75,7 @@ class DLExampleStrategy(Strategy):
 
 
     def pipeline_columns_and_mask(self):
+        '''
         universe = make_china_equity_universe(
             target_size=3000,
             mask=default_china_equity_universe_mask([RISK_BENCHMARK]),
@@ -86,13 +84,14 @@ class DLExampleStrategy(Strategy):
 
         )
         private_universe = private_universe_mask(self.portfolio.index)  # 把当前组合的stock 包含在universe中
+        '''
         last_price = USEquityPricing.close.latest >= 1.0  # 大于1元
-        universe = (universe & last_price) & ~ private_universe
+        universe = last_price
         # print "universe:",universe
         # Instantiate ranked factors
         returns = Returns(inputs=[USEquityPricing.close],mask=universe,window_length=2)
         risk_beta = 0.66 * RollingLinearRegressionOfReturns(
-            target=symbol(RISK_BENCHMARK),  # sid(8554),
+            target=symbol(RISK_BENCHMARK),
            returns_length=5,
            regression_length=21,
            # mask=long_short_screen
@@ -102,11 +101,9 @@ class DLExampleStrategy(Strategy):
         risk_beta.window_safe = True
         predict  = RNNPredict(universe,source='predict.csv',trigger_date=self.predict_time)  # 进行回顾
         sector = get_sector()
-
         columns = {
             'predict':predict,
             'market_beta': risk_beta,
             'sector': sector,
         }
-
         return columns,universe

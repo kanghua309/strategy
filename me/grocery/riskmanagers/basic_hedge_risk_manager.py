@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
-import pandas as pd
+import cvxpy as cvx
 import numpy as np
+import pandas as pd
 
 from .riskmanager import RiskManager
-import cvxpy as cvx
 
 MAX_GROSS_LEVERAGE = 1.0
 #NUM_LONG_POSITIONS  = 20 #剔除risk_benchmark
@@ -46,15 +46,18 @@ class BasicHedgeRiskManager(RiskManager):
         sector_dist = {}
         idx = 0
         for equite, classid in candidates[factors['SECTOR']].iteritems():
+            print "classid:", classid, equite
             if classid not in sector_dist:
                 _ = []
                 sector_dist[classid] = _
-                sector_dist[classid].append(idx)
+            sector_dist[classid].append(idx)
             idx += 1
-        print("sector size :", len(sector_dist))
+        print sector_dist
         for k, v in sector_dist.items():
             constraints.append(cvx.sum_entries(w[v]) <  (1 + MAX_SECTOR_EXPOSURE) / len(sector_dist))
             constraints.append(cvx.sum_entries(w[v]) >= (1 - MAX_SECTOR_EXPOSURE) / len(sector_dist))
+
+            print k, v, (1 + MAX_SECTOR_EXPOSURE) / len(sector_dist), (1 - MAX_SECTOR_EXPOSURE) / len(sector_dist)
         prob = cvx.Problem(objective, constraints)
         prob.solve()
         if prob.status != 'optimal':

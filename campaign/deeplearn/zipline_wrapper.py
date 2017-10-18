@@ -32,7 +32,7 @@ def rebalance(context, data):
     #print context.pipeline_data
     print ("today 0 :", type(get_datetime()), get_datetime(), type(context.sim_params.end_session),
            context.sim_params.end_session.day)
-    if (context.sim_params.end_session.day != get_datetime().day):  # 但只有最后一天运行
+    if (context.sim_params.end_session.day != get_datetime().day):
         return
     print ("today 1 :", get_datetime())
 
