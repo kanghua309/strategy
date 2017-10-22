@@ -86,21 +86,22 @@ class DLExampleStrategy(Strategy):
         private_universe = private_universe_mask(self.portfolio.index)  # 把当前组合的stock 包含在universe中
         '''
         last_price = USEquityPricing.close.latest >= 1.0  # 大于1元
-        universe = last_price
+        sector = get_sector()
+        sector_filter = sector != 0.0
+        universe = last_price & sector_filter
         # print "universe:",universe
         # Instantiate ranked factors
         returns = Returns(inputs=[USEquityPricing.close],mask=universe,window_length=2)
         risk_beta = 0.66 * RollingLinearRegressionOfReturns(
             target=symbol(RISK_BENCHMARK),
-           returns_length=5,
-           regression_length=21,
-           # mask=long_short_screen
-           mask=(universe),
+            returns_length=5,
+            regression_length=21,
+            # mask=long_short_screen
+            mask=(universe),
         ).beta + 0.33 * 1.0
         returns.window_safe = True
         risk_beta.window_safe = True
         predict  = RNNPredict(universe,source='predict.csv',trigger_date=self.predict_time)  # 进行回顾
-        sector = get_sector()
         columns = {
             'predict':predict,
             'market_beta': risk_beta,

@@ -58,7 +58,7 @@ def initialize(context):
 
     __build_deeplearn_strategy(context)
     attach_pipeline(make_pipeline(context), 'my_pipeline')
-    schedule_function(rebalance, date_rules.every_day(), time_rules.every_minute())  # 每天调度，但只有最后一天运行
+    schedule_function(rebalance, date_rules.every_day(), time_rules.every_minute())
     # record my portfolio variables at the end of day
     print ("initialize over")
     pass
