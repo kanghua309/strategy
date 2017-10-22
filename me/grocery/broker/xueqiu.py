@@ -69,7 +69,7 @@ class XueqiuLive:
         for i in df.values:
             _list.append(pd.DataFrame(i))
         if len(_list) == 0:
-            return pd.Series()
+            return pd.DataFrame()
         histdf = pd.concat(_list)
         histdf = histdf.fillna(0)
         return histdf
@@ -132,6 +132,7 @@ class XueqiuLive:
         tmpdict['keep_price'] = {}
         tmpdict['short_time'] = {}
         tmpdict['long_time'] = {}
+        print histdf
         for _, row in histdf.iterrows():  # 获取每行的index、row
             #print type(row), row, type(row['stock_symbol']), str(row['stock_symbol'])[2:]
             stock = str(row['stock_symbol'])[2:]
