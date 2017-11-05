@@ -136,7 +136,7 @@ class REINFORCEAgent:
     '-t',
     '--train_round',
     type=int,
-    default=100000,
+    default=10000,
     help='train round',
 )
 @click.option(
