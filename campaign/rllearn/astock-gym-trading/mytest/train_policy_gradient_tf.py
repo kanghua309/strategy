@@ -2,6 +2,8 @@ import logging
 
 import click
 import gym
+import gym_trading  #必须引入才自动注册
+
 import numpy as np
 import os.path
 import pandas as pd

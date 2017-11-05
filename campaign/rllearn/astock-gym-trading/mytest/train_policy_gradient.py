@@ -2,6 +2,8 @@ import logging
 
 import click
 import gym
+import gym_trading  #必须引入才自动注册
+
 import numpy as np
 import pandas as pd
 from keras.layers import Dense
