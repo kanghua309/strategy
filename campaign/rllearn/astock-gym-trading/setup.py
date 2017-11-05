@@ -2,5 +2,5 @@ from setuptools import setup
 
 setup(name='gym_trading',
       version='0.0.1',
-      install_requires=['gym', 'keras', 'tensorflow', 'ta-lib']
+      install_requires=['gym', 'keras', 'tensorflow', 'h5py','ta-lib']
       )
