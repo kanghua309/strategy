@@ -14,8 +14,6 @@ log = logging.getLogger(__name__)
 logging.basicConfig()
 log.setLevel(logging.INFO)
 log.info('%s logger started.', __name__)
-
-
 # This is Policy Gradient agent for the Cartpole
 # In this example, we use REINFORCE algorithm which uses monte-carlo update rule
 class REINFORCEAgent:
@@ -45,8 +43,7 @@ class REINFORCEAgent:
     # state is input and probability of each action is output of network
     def build_model(self):
         model = Sequential()
-        model.add(
-            Dense(self.hidden1, input_dim=self.state_size, activation='relu', kernel_initializer='glorot_uniform'))
+        model.add(Dense(self.hidden1, input_dim=self.state_size, activation='relu', kernel_initializer='glorot_uniform'))
         model.add(Dense(self.hidden2, activation='relu', kernel_initializer='glorot_uniform'))
         model.add(Dense(self.action_size, activation='softmax', kernel_initializer='glorot_uniform'))
         model.summary()
@@ -101,7 +98,6 @@ class REINFORCEAgent:
     def save_model(self, fn):
         self.model.save(fn)
 
-
 @click.command()
 @click.option(
     '-s',
@@ -117,6 +113,7 @@ class REINFORCEAgent:
     show_default=True,
     help='The begin date of the train.',
 )
+
 @click.option(
     '-e',
     '--end',
@@ -124,6 +121,7 @@ class REINFORCEAgent:
     show_default=True,
     help='The end date of the train.',
 )
+
 @click.option(
     '-d',
     '--days',
@@ -131,6 +129,7 @@ class REINFORCEAgent:
     default=100,
     help='train days',
 )
+
 @click.option(
     '-t',
     '--train_round',
@@ -145,6 +144,7 @@ class REINFORCEAgent:
     default=False,
     help="render when training"
 )
+
 @click.option(
     '-m',
     '--model_path',
@@ -185,7 +185,7 @@ def execute(symbol, begin, end, days, train_round, plot, model_path):
             action = agent.get_action(state)
             next_state, reward, done, info = env.step(action)
             next_state = np.reshape(next_state, [1, state_size])
-            # reward = reward if not done or score == 499 else -100
+            #reward = reward if not done or score == 499 else -100
 
             # save the sample <s, a, r> to the memory
             agent.append_sample(state, action, reward)

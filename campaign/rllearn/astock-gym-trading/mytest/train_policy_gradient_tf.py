@@ -12,9 +12,8 @@ logging.basicConfig()
 log.setLevel(logging.INFO)
 log.info('%s logger started.', __name__)
 
+
 PLOT_AFTER_ROUND = 1
-
-
 class PolicyGradient(object):
     """ Policy Gradient implementation in tensor flow.
    """
@@ -95,7 +94,7 @@ class PolicyGradient(object):
         # initialize variables and load model
         init_op = tf.global_variables_initializer()
         self._sess.run(init_op)
-        # if load_model:
+        #if load_model:
         #    ckpt = tf.train.get_checkpoint_state(model_dir)
         #    print tf.train.latest_checkpoint(model_dir)
         #    if ckpt and ckpt.model_checkpoint_path:
@@ -201,6 +200,7 @@ class PolicyGradient(object):
     show_default=True,
     help='The begin date of the train.',
 )
+
 @click.option(
     '-e',
     '--end',
@@ -208,6 +208,7 @@ class PolicyGradient(object):
     show_default=True,
     help='The end date of the train.',
 )
+
 @click.option(
     '-d',
     '--days',
@@ -215,6 +216,7 @@ class PolicyGradient(object):
     default=100,
     help='train days',
 )
+
 @click.option(
     '-t',
     '--train_round',
@@ -222,6 +224,8 @@ class PolicyGradient(object):
     default=100000,
     help='train round',
 )
+
+
 @click.option(
     '--plot/--no-plot',
     # default=os.name != "nt",
@@ -229,6 +233,7 @@ class PolicyGradient(object):
     default=False,
     help="render when training"
 )
+
 @click.option(
     '-m',
     '--model_path',
@@ -247,8 +252,7 @@ def execute(symbol, begin, end, days, train_round, plot, model_path):
     # train model,
     pg.train_model(env, episodes=train_round, model_dir=model_path, plot=plot)
 
-
 if __name__ == "__main__":
     # import os
-    # os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+    #os.environ["CUDA_VISIBLE_DEVICES"] = "0"
     execute()

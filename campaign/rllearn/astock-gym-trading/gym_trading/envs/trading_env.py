@@ -187,7 +187,7 @@ class TradingEnv(gym.Env):
     to 0, your episode is over and you lose. If your NAV hits 2.0, then
     you win.
 
-    The trading env will track a buy-and-hold strategy which will act as
+    The trading envs will track a buy-and-hold strategy which will act as
     the benchmark for the game.
 
     """

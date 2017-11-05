@@ -17,8 +17,6 @@ log = logging.getLogger(__name__)
 logging.basicConfig()
 log.setLevel(logging.INFO)
 log.info('%s logger started.', __name__)
-
-
 class DQN:
     def __init__(self, env):
         self.env = env
@@ -36,6 +34,7 @@ class DQN:
         self.model = self.create_model()
         self.target_model = self.create_model()
 
+
     def create_model(self):
         model = Sequential()
         print 'state_shape:', self.env.observation_space.shape
@@ -47,6 +46,7 @@ class DQN:
                       optimizer=Adam(lr=self.learning_rate))
         return model
 
+
     def act(self, state):
         """Acting Policy of the DQNAgent
         """
@@ -56,7 +56,7 @@ class DQN:
             return self.env.action_space.sample()
         # return np.argmax(self.model.predict(state,batch_size=1))
         qval = self.model.predict(state)[0]
-        # print "------------------------ qval:", np.argmax(qval),qval,state
+        #print "------------------------ qval:", np.argmax(qval),qval,state
         return np.argmax(self.model.predict(state)[0])
 
     def remember(self, state, action, reward, new_state, done):
@@ -100,9 +100,10 @@ class DQN:
         done_batch = batch[:, 4]
         return state_batch, action_batch, reward_batch, next_state_batch, done_batch
 
+
     def target_train(self):
         weights = self.model.get_weights()
-        # print "target train weight:",weights
+        #print "target train weight:",weights
         target_weights = self.target_model.get_weights()
         for i in range(len(target_weights)):
             target_weights[i] = weights[i] * self.tau + target_weights[i] * (1 - self.tau)
@@ -127,6 +128,7 @@ class DQN:
     show_default=True,
     help='The begin date of the train.',
 )
+
 @click.option(
     '-e',
     '--end',
@@ -134,6 +136,7 @@ class DQN:
     show_default=True,
     help='The end date of the train.',
 )
+
 @click.option(
     '-d',
     '--days',
@@ -141,6 +144,7 @@ class DQN:
     default=100,
     help='train days',
 )
+
 @click.option(
     '-t',
     '--train_round',
@@ -155,6 +159,7 @@ class DQN:
     default=False,
     help="render when training"
 )
+
 @click.option(
     '-m',
     '--model_path',
@@ -215,8 +220,7 @@ def execute(symbol, begin, end, days, train_round, plot, model_path):
     log.info("Completed in %d trials , save it as %s", episode,
              os.path.join(model_path, dqn_agent.env.src.symbol + ".model"))
     dqn_agent.save_model(os.path.join(model_path, dqn_agent.env.src.symbol + ".model"))
-    # break
-
+    #break
 
 if __name__ == '__main__':
     execute()
