@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 import logging
 
 import click
@@ -182,7 +184,7 @@ def execute(symbol, begin, end, days, train_round, plot, model_path):
                 #####################################################################################
                 if plot:
                     env.render()
-                    ####################################################################################
+                ####################################################################################
             # get action for the current state and go one step in environment
             action = agent.get_action(state)
             next_state, reward, done, info = env.step(action)
