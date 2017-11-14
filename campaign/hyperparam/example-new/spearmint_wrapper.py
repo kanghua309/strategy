@@ -8,6 +8,7 @@ from pandas.tslib import Timestamp
 from zipline.data.bundles import register
 from zipline.data.bundles.viadb import viadb
 
+
 def main(job_id,D):
     print "job_id",job_id," params:",D
 
