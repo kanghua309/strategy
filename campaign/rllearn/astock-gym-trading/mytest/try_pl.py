@@ -82,9 +82,9 @@ def execute(symbol, begin, end, days, plot, model_path,random):
         state, _, done, info = env.step(action)
 
         # log.info("%s,%s,%s,%s",state, _, done, info)
-       # log.info("\n%s", env.sim.to_df())
-       # if plot:
-       #     env.render()
+        # log.info("\n%s", env.sim.to_df())
+        if plot:
+           env.render()
 
 
 if __name__ == "__main__":
