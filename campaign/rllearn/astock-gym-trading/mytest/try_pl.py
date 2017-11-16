@@ -66,6 +66,7 @@ import gym_trading  #必须引入才自动注册
     help="random range"
 )
 
+
 def execute(symbol, begin, end, days, plot, model_path,random):
     print model_path
     model = load_model(model_path)
