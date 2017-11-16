@@ -69,12 +69,17 @@ class ZiplineEnvSrc(object):
         self.orgin_idx = 0
         self.prices = _df.close
 
-    def reset(self):
-        self.idx = np.random.randint(low=0, high=len(self.data.index) - self.days)
+    def reset(self,random):
+        if random == True:
+            self.idx = np.random.randint(low=0, high=len(self.data.index) - self.days)
+        else:
+            self.idx = len(self.data.index) - self.days
         self.step = 0
         self.orgin_idx = self.idx  # for render , so record it
-        self.reset_start_day = str(pd.Timestamp(self.start) + pd.Timedelta(days=self.orgin_idx))[:10]
-        self.reset_end_day = str(pd.Timestamp(self.start) + pd.Timedelta(days=(self.orgin_idx + self.days)))[:10]
+        self.reset_start_day = str(self.data.index[self.orgin_idx -1 ])[:10]
+        self.reset_end_day = str(self.data.index[self.orgin_idx + self.days -1 ])[:10]
+        #print(self.reset_start_day,self.reset_end_day)
+
 
     def _step(self):
         obs = self.data.iloc[self.idx].as_matrix()
@@ -197,7 +202,7 @@ class TradingEnv(gym.Env):
         self.inited = False;
         pass
 
-    def initialise(self, symbol, start, end, days):
+    def initialise(self, symbol, start, end, days ,random = True):
         self.days = days
         self.src = ZiplineEnvSrc(symbol=symbol, start=start, end=end, days=self.days)
         self.sim = TradingSim(steps=self.days, trading_cost_bps=1e-4, time_cost_bps=1e-4)  # TODO FIX
@@ -209,6 +214,7 @@ class TradingEnv(gym.Env):
         self.inited = True
         self.render_on = 0
         self.reset_count = 0
+        self.random = random
 
     def _configure(self, display=None):
         self.display = display
@@ -228,7 +234,7 @@ class TradingEnv(gym.Env):
     def _reset(self):
         if self.inited == False: return
         self.reset_count += 1
-        self.src.reset()
+        self.src.reset(self.random)
         self.sim.reset()
         return self.src._step()[0]
 

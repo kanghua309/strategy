@@ -12,6 +12,7 @@ logging.basicConfig()
 log.setLevel(logging.INFO)
 log.info('%s logger started.', __name__)
 
+import gym_trading  #必须引入才自动注册
 
 @click.command()
 @click.option(
@@ -39,7 +40,7 @@ log.info('%s logger started.', __name__)
     '-d',
     '--days',
     type=int,
-    default=100,
+    default=30,
     help='train days',
 )
 @click.option(
@@ -56,11 +57,20 @@ log.info('%s logger started.', __name__)
     show_default=True,
     help='trained model save path.',
 )
-def execute(symbol, begin, end, days, plot, model_path):
+
+@click.option(
+    '-r',
+    '--random',
+    is_flag=True,
+    default=False,
+    help="render when training"
+)
+
+def execute(symbol, begin, end, days, plot, model_path,random):
     print model_path
     model = load_model(model_path)
     env = gym.make('trading-v0').env
-    env.initialise(symbol=symbol, start=begin, end=end, days=days)
+    env.initialise(symbol=symbol, start=begin, end=end, days=days, random = random)
     state_size = env.observation_space.shape[0]
     state = env.reset()
     done = False
@@ -70,10 +80,11 @@ def execute(symbol, begin, end, days, plot, model_path):
         qval = model.predict(state, batch_size=1)
         action = (np.argmax(qval))
         state, _, done, info = env.step(action)
+
         # log.info("%s,%s,%s,%s",state, _, done, info)
-        log.info("\n%s", env.sim.to_df())
-        if plot:
-            env.render()
+       # log.info("\n%s", env.sim.to_df())
+       # if plot:
+       #     env.render()
 
 
 if __name__ == "__main__":
