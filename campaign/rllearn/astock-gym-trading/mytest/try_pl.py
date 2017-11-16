@@ -63,7 +63,7 @@ import gym_trading  #必须引入才自动注册
     '--random',
     is_flag=True,
     default=False,
-    help="render when training"
+    help="random range"
 )
 
 def execute(symbol, begin, end, days, plot, model_path,random):
