@@ -2,12 +2,12 @@
 <project version="4">
   <component name="WebServers">
     <option name="servers">
-      <webServer id="89797fe4-9d94-4c36-8243-04c3d2479ab2" name="GPU" url="http://10.110.170.132">
-        <fileTransfer host="10.110.170.132" port="22" rootFolder="/data/kanghua" accessType="SFTP">
+      <webServer id="89797fe4-9d94-4c36-8243-04c3d2479ab2" name="GPU" url="http://10.58.85.20">
+        <fileTransfer host="10.58.85.20" port="2222" rootFolder="/home/zipline" accessType="SFTP">
           <advancedOptions>
             <advancedOptions dataProtectionLevel="Private" />
           </advancedOptions>
-          <option name="port" value="22" />
+          <option name="port" value="2222" />
         </fileTransfer>
       </webServer>
     </option>

@@ -10,6 +10,13 @@
             </list>
           </settings>
         </remote-mappings>
+        <remote-mappings server-id="python@ssh://zipline@10.58.85.20:2222/usr/bin/python">
+          <settings>
+            <list>
+              <mapping local-root="$PROJECT_DIR$" remote-root="/home/zipline/mystrategy" />
+            </list>
+          </settings>
+        </remote-mappings>
       </list>
     </list>
   </component>

@@ -202,14 +202,19 @@ def default_china_equity_universe_mask(unmask):
             #print out
     return IsInDefaultChinaUniverse()
 
-def private_universe_mask(mask):
+def private_universe_mask(mask,asset_finder = None):
     mask = mask
+    def sid(sid):
+        return asset_finder.retrieve_asset(sid)
     class IsInPrivateUniverse(CustomFilter):
         inputs = [];
         window_length = 1
         def compute(self, today, asset_ids, out, *inputs):
-            #print asset_ids
             #print maskset
+            #print asset_ids
+            # for id in asset_ids:
+            #     print id
+            #     print type(sid(id))
             assets  = [sid(id).symbol for id in asset_ids]
             #print "--------------"
             #print pd.Series(assets)

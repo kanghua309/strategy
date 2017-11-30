@@ -5,7 +5,7 @@
       <paths name="GPU">
         <serverdata>
           <mappings>
-            <mapping deploy="/workshop/strategy" local="$PROJECT_DIR$" web="/" />
+            <mapping deploy="/mystrategy" local="$PROJECT_DIR$" web="/" />
           </mappings>
         </serverdata>
       </paths>
