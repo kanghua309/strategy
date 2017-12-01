@@ -20,8 +20,11 @@ class ILLIQ(CustomFactor):
         print(_rets.head(10))
         _vols  = pd.DataFrame(volume, columns= assets)[1:]
         print(_vols.head(10))
+        print "--------------------------1"
         print(_rets/_vols)
-        print pd.rolling_mean(_rets/_vols, window=self.window_length)
+        print "--------------------------2"
+
+        print pd.rolling_mean(_rets/_vols, window=2)
         #out[:] =
 
 
@@ -55,7 +58,7 @@ def make_pipeline(asset_finder):
     # outstanding.window_safe = True
     # turnover_rate = vol / Latest([outstanding])
     # returns = Returns(inputs=[USEquityPricing.close], window_length=5)  # 预测一周数据
-    private_universe = private_universe_mask(['000001','000002','000003'],asset_finder=asset_finder)
+    private_universe = private_universe_mask(['000001','000002'],asset_finder=asset_finder)
 
     illiq = ILLIQ(window_length=10,mask = private_universe)
     pipe_columns = {
