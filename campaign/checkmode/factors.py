@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 
 from zipline.pipeline.data import USEquityPricing
-from zipline.pipeline.factors import CustomFactor, Returns, Latest
+from zipline.pipeline.factors import CustomFactor, Returns, Latest ,RSI
 from me.pipeline.factors.tsfactor import Fundamental
 
 import talib
@@ -31,24 +31,25 @@ class ILLIQ(CustomFactor):
         out[:] =(_rets/_vols).mean().values
 
 
-class MOM(CustomFactor):
-    # this class generates the MACD as a Percentage
-    inputs = [USEquityPricing.close]
-    window_length = int(252)
-
-    def columnwise_anynan(self,array2d):
-        return np.isnan(array2d).any(axis=0)
-    def compute(self, today, assets, out, close):
-            window_length= len(close)
-            print window_length,np.shape(close)
-            anynan = self.columnwise_anynan(close)
-            for col_ix, have_nans in enumerate(anynan):
-                if have_nans:
-                    out[col_ix] = np.nan
-                    continue
-                mom = talib.MOM(close[:, col_ix],timeperiod=window_length)
-                print "---mom :", mom
-                out[col_ix] = mom[-1]
+# class MOM(CustomFactor):
+#     # this class generates the MACD as a Percentage
+#     inputs = [USEquityPricing.close]
+#     window_length = int(252)
+#
+#     def columnwise_anynan(self,array2d):
+#         return np.isnan(array2d).any(axis=0)
+#     def compute(self, today, assets, out, close):
+#             window_length= len(close)
+#             print window_length,np.shape(close)
+#             anynan = self.columnwise_anynan(close)
+#             for col_ix, have_nans in enumerate(anynan):
+#                 if have_nans:
+#                     out[col_ix] = np.nan
+#                     continue
+#                 print(window_length,close[:, col_ix])
+#                 mom = talib.MOM(close[:, col_ix],timeperiod=window_length-1)
+#
+#                 out[col_ix] = mom[-1]
 
 
 
@@ -90,7 +91,7 @@ def make_pipeline(asset_finder):
     bvps = Fundamental(asset_finder).bvps
     rev20 = Returns(inputs=[USEquityPricing.close], window_length=20)
     vol20 = AverageDollarVolume(window_length=20)
-    mom = MOM(window_length=20)
+    rsi = RSI(window_length=20)
 
     pipe_columns = {
         # 'h2o': h2o.log1p().zscore(),
@@ -105,7 +106,7 @@ def make_pipeline(asset_finder):
         'ILLIQ':illiq,
         'ep':ep,
         'vol20':vol20,
-        'mom':mom,
+        'rsi':rsi,
     }
     # pipe_screen = (low_returns | high_returns)
     pipe = Pipeline(columns=pipe_columns,screen=private_universe)
