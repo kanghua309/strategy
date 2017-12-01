@@ -75,35 +75,46 @@ def get_sectors_no(mids):
             no_.append(missing_value)
     return no_
 
-def get_sector(sector_dict=None):
+def get_sector(sector_dict=None,mask = None,asset_finder = None):
     if sector_dict is None:
         sector_dict = get_sector_class()
     #print("++enter getSector++",len(sector_dict))
     basic=load_tushare_df("basic")
+    #print(asset_finder)
+    def _sid(sid):
+        return asset_finder.retrieve_asset(sid)
     class Sector(CustomClassifier):  #CustomClassifier 是int , factor 是float
-        inputs = [];
+        inputs = []
         window_length = 1
         dtype = np.int64
-        missing_value = 0
+        missing_value = 999
         #result[isnan(result)] = self.missing_value
         #params = ('universes',)
         def findSector(self,assets):
             sector_list=[]
             for msid in assets:
-                stock = sid(msid).symbol
+                if asset_finder != None:
+                    stock = _sid(msid).symbol
+                else:
+                    stock = sid(msid).symbol
                 try:
                     industry=basic.loc[stock].industry
                     sector_no=sector_dict[industry]
                     sector_list.append(sector_no)
                 except:
                     #print "stock %s in industry %s not find in default sector set, set zero" % (stock,industry)
-                    sector_list.append(self.missing_value)
+                    sector_list.append(0)
                 else:
                     pass
             return sector_list
         def compute(self, today, assets, out, *inputs):
-            out[:] = self.findSector(assets)
-    return Sector()
+            #out[:] = self.findSector(assets)
+            rs = self.findSector(assets)
+            print("sector:",assets.size,assets,rs)
+            #out[:] = [0, 0, 144]
+            out[:] = rs
+            #print("sector:",assets.size,assets,out)
+    return Sector(mask=mask)
 
 
 import numpy as np
@@ -114,7 +125,7 @@ class RandomUniverse(CustomClassifier):
     window_length = 1
     dtype = np.int64
     missing_value = 9999
-    params = ('universes',)
-
-    def compute(self, today, assets, out, universes):
-        out[:] = np.random.randint(universes, size=assets.size)
+    #params = ('universes',)
+    def compute(self, today, assets, out, *inputs):
+        out[:] = [0,0,144]
+        print("sector:", assets.size, assets,out)

@@ -67,8 +67,11 @@ from me.pipeline.factors.tsfactor import Fundamental
 from me.pipeline.filters.universe import make_china_equity_universe, default_china_equity_universe_mask, \
     private_universe_mask
 from zipline.utils.cli import Date, Timestamp
+from me.pipeline.classifiers.tushare.sector import get_sector,RandomUniverse
+
+
 start = '2015-9-1'  # 必须在国内交易日
-end   = '2015-9-8'  # 必须在国内交易日
+end   = '2015-9-30'  # 必须在国内交易日
 
 def make_pipeline(asset_finder):
     # h2o = USEquityPricing.high.latest / USEquityPricing.open.latest
@@ -83,16 +86,21 @@ def make_pipeline(asset_finder):
     # outstanding.window_safe = True
     # turnover_rate = vol / Latest([outstanding])
     # returns = Returns(inputs=[USEquityPricing.close], window_length=5)  # 预测一周数据
-    private_universe = private_universe_mask(['000001','000002'],asset_finder=asset_finder)
+    #private_universe = private_universe_mask(['000001','000002','000005','000004','000006','000007''000009'],asset_finder=asset_finder)
+    private_universe = private_universe_mask(['000001','000002','000005'],asset_finder=asset_finder)
 
-    illiq = ILLIQ(window_length=20,mask = private_universe)
-    ep = 1/Fundamental(asset_finder).pe
-    bp = 1/Fundamental(asset_finder).pb
-    bvps = Fundamental(asset_finder).bvps
-    rev20 = Returns(inputs=[USEquityPricing.close], window_length=20)
-    vol20 = AverageDollarVolume(window_length=20)
-    rsi = RSI(window_length=20)
+    #illiq = ILLIQ(window_length=20)
 
+    # illiq = ILLIQ(window_length=20,mask = private_universe)
+    # ep = 1/Fundamental(asset_finder).pe
+    # bp = 1/Fundamental(asset_finder).pb
+    # bvps = Fundamental(asset_finder).bvps
+    # rev20 = Returns(inputs=[USEquityPricing.close], window_length=20)
+    # vol20 = AverageDollarVolume(window_length=20)
+    rsi = RSI(window_length=20,mask = private_universe)
+    #market = Fundamental(asset_finder).outstanding
+    sector = get_sector(asset_finder=asset_finder,mask=private_universe)
+    random = RandomUniverse(mask = private_universe)
     pipe_columns = {
         # 'h2o': h2o.log1p().zscore(),
         # 'l2o': l2o.log1p().zscore(),
@@ -103,13 +111,21 @@ def make_pipeline(asset_finder):
         # 'vol': vol.zscore(),
         # 'turnover_rate': turnover_rate.log1p().zscore(),
         # 'return': returns.log1p(),
-        'ILLIQ':illiq,
-        'ep':ep,
-        'vol20':vol20,
-        'rsi':rsi,
+        # 'ILLIQ':illiq,
+        # 'ep':ep,
+        # 'vol20':vol20,
+        # #'rsi':rsi.zscore(groupby = sector,mask=rsi.percentile_between(1, 99)),
+        'rsi0': rsi,
+        'rsi1': rsi.zscore(),
+        'rsi2': rsi.zscore(groupby=sector),
+        # 'rsi3': vol20.demean(groupby=sector),
+        # 'market_rank':market.quantiles(100),
+        'sector':sector,
     }
     # pipe_screen = (low_returns | high_returns)
-    pipe = Pipeline(columns=pipe_columns,screen=private_universe)
+    pipe = Pipeline(columns=pipe_columns,
+           screen=private_universe,
+           )
     return pipe
 
 
