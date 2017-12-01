@@ -87,7 +87,7 @@ def get_sector(sector_dict=None,mask = None,asset_finder = None):
         inputs = []
         window_length = 1
         dtype = np.int64
-        missing_value = 999
+        missing_value = 999 #似乎不能被返回？？
         #result[isnan(result)] = self.missing_value
         #params = ('universes',)
         def findSector(self,assets):
@@ -110,10 +110,9 @@ def get_sector(sector_dict=None,mask = None,asset_finder = None):
         def compute(self, today, assets, out, *inputs):
             #out[:] = self.findSector(assets)
             rs = self.findSector(assets)
-            print("sector:",assets.size,assets,rs)
+            #print("sector:",assets.size,assets,rs)
             #out[:] = [0, 0, 144]
             out[:] = rs
-            #print("sector:",assets.size,assets,out)
     return Sector(mask=mask)
 
 
