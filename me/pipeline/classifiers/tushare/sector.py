@@ -117,7 +117,6 @@ def get_sector(sector_dict=None,mask = None,asset_finder = None):
     return Sector(mask=mask)
 
 def get_sector_by_onehot(sector_dict=None,mask = None,asset_finder = None):
-    print("------------------------------get_sector_by_onehot")
     if sector_dict is None:
         sector_dict,_ = get_sector_class()
     basic=load_tushare_df("basic")
@@ -151,7 +150,6 @@ def get_sector_by_onehot(sector_dict=None,mask = None,asset_finder = None):
     #print sector_inddict
     #print onehot_sector
     class OneHotSector(CustomFactor):  #CustomClassifier 是int , factor 是float
-        print("------------------------------OneHotSector")
         inputs = []
         window_length = 1
         #missing_value = -1 #似乎不能被返回？？
@@ -177,15 +175,12 @@ def get_sector_by_onehot(sector_dict=None,mask = None,asset_finder = None):
             return sector_no,sector_name
 
         def compute(self,today, assets, out):
-            print("------------------------------compute")
-
             idx = 0
             for asset in assets:
                 sno,sname = self._find_sector(asset)
-                print("---------------------------------------------------------debug:",sno,sname)
                 if sno != 0:
                     onehots = onehot_sector.loc[sname]
-                    print onehots
+                    #print onehots
                 i = 0
                 for output in self.outputs:
                     if sno != 0:
