@@ -10,7 +10,7 @@ import pandas as pd
 from zipline.pipeline.data import USEquityPricing
 from zipline.pipeline.factors import CustomFactor, Returns, Latest ,RSI
 from me.pipeline.factors.tsfactor import Fundamental
-from me.pipeline.classifiers.tushare.sector import get_sector,RandomUniverse,get_sector_class
+from me.pipeline.classifiers.tushare.sector import get_sector,RandomUniverse,get_sector_class,get_sector_by_onehot
 from zipline.pipeline.factors import CustomFactor
 from zipline.pipeline.classifiers import CustomClassifier,Latest
 import talib
@@ -36,8 +36,6 @@ class MeanReturn(CustomFactor):
     inputs = [Returns(window_length=2)]
     def compute(self, today, assets, out, returns):
         out[:] = np.nanmean(returns, axis=0)
-
-
 
 
 class OneHotSector(CustomFactor):
@@ -94,7 +92,10 @@ class OneHotSector(CustomFactor):
                 print(out.dtype.names)
                 print out[i]
 
-                print(type(out[i]),out[i])
+                # print(type(out[i]),out[i],rs.iloc[-1].values)
+                # out[i] =tuple(rs.iloc[-1].values)
+                # print("===========================================")
+                # print out[i]
                 j = 0
                 for x in self.outputs:
                     out[i][x] = int(rs.iloc[-1].values[j])
@@ -102,7 +103,7 @@ class OneHotSector(CustomFactor):
 
                 i += 1
                 print("out ................................. 0")
-                print out[i, :]
+                #print out[i, :]
             except Exception as e:
                 print e
                 pass
@@ -193,8 +194,10 @@ def make_pipeline(asset_finder):
     random = RandomUniverse(mask = private_universe)
     #returns = Returns(window_length=50)
     #mr = MeanReturn(inputs=[returns], window_length=252, mask=private_universe)
-    random.window_safe = True
-    ONEHOTCLASS = OneHotSector(inputs=[random],window_length=1, mask=private_universe)
+    #random.window_safe = True
+    ONEHOTCLASS,sector_indict_keys = get_sector_by_onehot(asset_finder=asset_finder,mask=private_universe)
+
+    #ONEHOTCLASS = OneHotSector(inputs=[random],window_length=1, mask=private_universe)
 
     pipe_columns = {
         # 'h2o': h2o.log1p().zscore(),
@@ -223,12 +226,11 @@ def make_pipeline(asset_finder):
            screen=private_universe,
            )
 
-    i = 0
+    i = 0 #TODO
     for c in ONEHOTCLASS:
-        print c
-        pipe.add(c,str(i))
+        #print "xxxx",sector_indict_keys[i]
+        pipe.add(c,sector_indict_keys[i])
         i += 1
-
 
     return pipe
 

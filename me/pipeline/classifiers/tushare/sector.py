@@ -7,6 +7,8 @@ Created on Wed May 17 11:52:31 2017
 from zipline.api import (
     sid,
 )
+from sklearn import preprocessing
+import pandas as pd
 from zipline.pipeline.factors import CustomFactor
 from zipline.pipeline.classifiers import CustomClassifier,Latest
 #from me.pipeline.utils import tushare_loader as tu
@@ -30,7 +32,7 @@ def get_sector_class(limit_size = Sector_TOPN,umask = Sector_Umask):
     for industry,_ in df.groupby('industry').industry.value_counts().nlargest(limit_size).iteritems():
         industryClass[industry[0]] = no
         rindustryClass[no] = industry[0]
-        no = no +1
+        no += 1
     return industryClass,rindustryClass
 
 '''
@@ -89,7 +91,7 @@ def get_sector(sector_dict=None,mask = None,asset_finder = None):
         inputs = []
         window_length = 1
         dtype = np.int64
-        missing_value = 999 #似乎不能被返回？？
+        missing_value = -1 #似乎不能被返回？？
         #result[isnan(result)] = self.missing_value
         #params = ('universes',)
         def findSector(self,assets):
@@ -110,17 +112,95 @@ def get_sector(sector_dict=None,mask = None,asset_finder = None):
                     pass
             return sector_list
         def compute(self, today, assets, out, *inputs):
-            #out[:] = self.findSector(assets)
             rs = self.findSector(assets)
-            #print("sector:",assets.size,assets,rs)
-            #out[:] = [0, 0, 144]
             out[:] = rs
     return Sector(mask=mask)
 
+def get_sector_by_onehot(sector_dict=None,mask = None,asset_finder = None):
+    print("------------------------------get_sector_by_onehot")
+    if sector_dict is None:
+        sector_dict,_ = get_sector_class()
+    basic=load_tushare_df("basic")
+    #print(asset_finder)
+    def _sid(sid):
+        return asset_finder.retrieve_asset(sid)
+
+    def _onehot_sectors(sector_keys):
+        ##- Convert the Sectors column into binary labels
+        sector_binarizer = preprocessing.LabelBinarizer()
+        strlbls = map(str,sector_keys)  # LabelBinarizer didn't like float values, so convert to strings
+        #strlbls.sort() #fix sort
+        #print "sekctor", type(sector_keys),sector_keys
+        #print "strlbls", type(strlbls), strlbls
+        sector_binarizer.fit(strlbls)
+        sector_labels_bin = sector_binarizer.transform(strlbls)  # this is now 12 binary columns from 1 categorical
+
+        ##- Create a pandas dataFrame from the new binary labels
+        #print(sector_labels_bin)
+        colNames = []
+        for i in range(len(sector_labels_bin[0])):
+            colNames.append("S_L_" + strlbls[i])  # TODO
+        sLabels = pd.DataFrame(data=sector_labels_bin, index=strlbls, columns=colNames)
+        return sLabels
+
+    sector_indict,sector_rindict = get_sector_class() #TODO ORDERDICT????
+    sector_indict_keys = sector_indict.keys()
+    sector_indict_keys.sort()
+    onehot_sector = _onehot_sectors(sector_indict_keys)
+    #print sector_indict
+    #print sector_inddict
+    #print onehot_sector
+    class OneHotSector(CustomFactor):  #CustomClassifier 是int , factor 是float
+        print("------------------------------OneHotSector")
+        inputs = []
+        window_length = 1
+        #missing_value = -1 #似乎不能被返回？？
+        #result[isnan(result)] = self.missing_value
+        #params = ('universes',)
+        outputs = sector_indict_keys
+        def _find_sector(self,asset):
+            sector_no = 0
+            sector_name = ""
+            if asset_finder != None:
+                stock = _sid(asset).symbol
+            else:
+                stock = sid(asset).symbol
+            try:
+                industry=basic.loc[stock].industry
+                sector_no=sector_dict[industry]
+                sector_name = industry
+            except:
+                print "stock %s in not find in default sector set, set zero" % (stock)
+                pass
+            else:
+                pass
+            return sector_no,sector_name
+
+        def compute(self,today, assets, out):
+            print("------------------------------compute")
+
+            idx = 0
+            for asset in assets:
+                sno,sname = self._find_sector(asset)
+                print("---------------------------------------------------------debug:",sno,sname)
+                if sno != 0:
+                    onehots = onehot_sector.loc[sname]
+                    print onehots
+                i = 0
+                for output in self.outputs:
+                    if sno != 0:
+                        #print ("++++",idx,output,onehots.values[i])
+                        out[idx][output] = int(onehots.values[i])
+                    else:
+                        out[idx][output] = 0
+                    i += 1
+                idx += 1
+            #print out
+    return OneHotSector(mask=mask),sector_indict_keys
+
+
 
 import numpy as np
-
-
 class RandomUniverse(CustomClassifier):
     inputs = []
     window_length = 1
