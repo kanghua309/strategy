@@ -24,12 +24,14 @@ def get_sector_class(limit_size = Sector_TOPN,umask = Sector_Umask):
     df = load_tushare_df("basic")
     df = df[-df['industry'].isin(umask)]  # 排除给定行
     industryClass={}
+    rindustryClass={}
     no = Sector_StartNo
     #for industry,_ in load_tushare_df("industry").groupby('c_name'):
     for industry,_ in df.groupby('industry').industry.value_counts().nlargest(limit_size).iteritems():
         industryClass[industry[0]] = no
+        rindustryClass[no] = industry[0]
         no = no +1
-    return industryClass
+    return industryClass,rindustryClass
 
 '''
 def get_sector(sector_dict=None):
@@ -61,7 +63,7 @@ def get_sector(sector_dict=None):
 
 def get_sectors_no(mids):
     basic = load_tushare_df("basic")
-    _class = get_sector_class()
+    _class,_ = get_sector_class()
     no_ = []
     missing_value = 0
     for msid in mids:
@@ -77,7 +79,7 @@ def get_sectors_no(mids):
 
 def get_sector(sector_dict=None,mask = None,asset_finder = None):
     if sector_dict is None:
-        sector_dict = get_sector_class()
+        sector_dict,_ = get_sector_class()
     #print("++enter getSector++",len(sector_dict))
     basic=load_tushare_df("basic")
     #print(asset_finder)
