@@ -242,3 +242,16 @@ result = research.run_pipeline(my_pipe,
                                Date(tz='utc', as_timestamp=True).parser(start),
                                Date(tz='utc', as_timestamp=True).parser(end))
 print result
+print type(result)
+print result.reset_index()
+result = result.reset_index().drop(['level_0','level_1'],axis = 1).fillna(0)
+
+
+from sklearn.preprocessing import PolynomialFeatures
+print type(result.values),result.values
+print "============================="
+quadratic_featurizer  = PolynomialFeatures(interaction_only=True)
+X_train_quadratic = quadratic_featurizer.fit_transform(result.values)
+print X_train_quadratic
+
+#print type(result.as_matrix()),result.as_matrix
