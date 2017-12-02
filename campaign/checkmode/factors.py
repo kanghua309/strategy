@@ -244,14 +244,26 @@ result = research.run_pipeline(my_pipe,
 print result
 print type(result)
 print result.reset_index()
-result = result.reset_index().drop(['level_0','level_1'],axis = 1).fillna(0)
+#result.replace([np.inf,-np.inf],np.nan)
+result = result.reset_index().drop(['level_0','level_1'],axis = 1).replace([np.inf,-np.inf],np.nan).fillna(0)
+
+# print result.isnull().any()
+# print result[result.isnull().values==True]
 
 
 from sklearn.preprocessing import PolynomialFeatures
 print type(result.values),result.values
 print "============================="
+# print np.isfinite(result.values.all())
+# all_inf_or_nan = result.isin([np.inf,-np.inf,np.nan]).all(axis = 'columns')
+# x = result[~all_inf_or_nan]
+# # from sklearn.preprocessing import Imputer
+# imp = Imputer(missing_values='NaN', strategy='mean', axis=0)
+# imp.fit(X)
+
 quadratic_featurizer  = PolynomialFeatures(interaction_only=True)
 X_train_quadratic = quadratic_featurizer.fit_transform(result.values)
 print X_train_quadratic
+print np.shape(X_train_quadratic)
 
 #print type(result.as_matrix()),result.as_matrix
