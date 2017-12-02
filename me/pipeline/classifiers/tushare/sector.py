@@ -120,7 +120,6 @@ def get_sector_by_onehot(sector_dict=None,mask = None,asset_finder = None):
     if sector_dict is None:
         sector_dict,_ = get_sector_class()
     basic=load_tushare_df("basic")
-    #print(asset_finder)
     def _sid(sid):
         return asset_finder.retrieve_asset(sid)
 
@@ -128,12 +127,8 @@ def get_sector_by_onehot(sector_dict=None,mask = None,asset_finder = None):
         ##- Convert the Sectors column into binary labels
         sector_binarizer = preprocessing.LabelBinarizer()
         strlbls = map(str,sector_keys)  # LabelBinarizer didn't like float values, so convert to strings
-        #strlbls.sort() #fix sort
-        #print "sekctor", type(sector_keys),sector_keys
-        #print "strlbls", type(strlbls), strlbls
         sector_binarizer.fit(strlbls)
         sector_labels_bin = sector_binarizer.transform(strlbls)  # this is now 12 binary columns from 1 categorical
-
         ##- Create a pandas dataFrame from the new binary labels
         #print(sector_labels_bin)
         colNames = []
@@ -152,9 +147,6 @@ def get_sector_by_onehot(sector_dict=None,mask = None,asset_finder = None):
     class OneHotSector(CustomFactor):  #CustomClassifier 是int , factor 是float
         inputs = []
         window_length = 1
-        #missing_value = -1 #似乎不能被返回？？
-        #result[isnan(result)] = self.missing_value
-        #params = ('universes',)
         outputs = sector_indict_keys
         def _find_sector(self,asset):
             sector_no = 0
@@ -168,7 +160,7 @@ def get_sector_by_onehot(sector_dict=None,mask = None,asset_finder = None):
                 sector_no=sector_dict[industry]
                 sector_name = industry
             except:
-                print "stock %s in not find in default sector set, set zero" % (stock)
+                #print "stock %s in not find in default sector set, set zero" % (stock)
                 pass
             else:
                 pass
