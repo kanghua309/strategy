@@ -32,84 +32,83 @@ class ILLIQ(CustomFactor):
         #print (_rets/_vols).mean(),type((_rets/_vols).mean())
         out[:] =(_rets/_vols).mean().values
 
-class MeanReturn(CustomFactor):
-    inputs = [Returns(window_length=2)]
-    def compute(self, today, assets, out, returns):
-        out[:] = np.nanmean(returns, axis=0)
-
-
-class OneHotSector(CustomFactor):
-    inputs = [RandomUniverse()]
-    #window_length = 1
-    window_safe = True
-    #dtype = np.int64
-    missing_value = 0
-    #outputs = get_sector_class()[0]
-    #outputs,_ = get_sector_class()
-    outputs = ['highs', 'lows']
-    xssss,yssss = get_sector_class()
-    def oneHot_sectors(self,sector_keys):
-        ##- Convert the Sectors column into binary labels
-        from sklearn import preprocessing
-        import pandas as pd
-        sector_binarizer = preprocessing.LabelBinarizer()
-        strlbls = map(str, sector_keys)  # LabelBinarizer didn't like float values, so convert to strings
-        print "strlbls",type(strlbls),strlbls
-        sector_binarizer.fit(strlbls)
-        sector_labels_bin = sector_binarizer.transform(strlbls)  # this is now 12 binary columns from 1 categorical
-
-        ##- Create a pandas dataFrame from the new binary labels
-        print(sector_labels_bin)
-        colNames = []
-        for i in range(len(sector_labels_bin[0])):
-            colNames.append("S_Label_" + strlbls[i] + str(i)) #TODO
-        sLabels = pd.DataFrame(data=sector_labels_bin, index=sector_keys, columns=colNames)
-        return sLabels
-
-    def compute(self, today, assets, out,input):
-        print "===",self.outputs
-        print "+++",type(input),np.shape(input),input
-        print "###",assets
-        print "&&&",type(out),np.shape(out),out
-        print type(get_sector_class()),type(self.outputs),type(self.yssss)
-        print self.yssss
-        rs = self.oneHot_sectors(self.outputs)
-        print rs
-        print rs.index
-        i = 0
-        for no in input[0,:].tolist():
-            print "-----------no",no
-            try:
-                print self.yssss[no]
-                #print rs.loc(self.yssss[no])
-                print rs.iloc[-1]
-                print type(rs.iloc[-1].values),rs.iloc[-1].values
-                #print("+++++++++++++++++++++++++++++++1")
-                #print rs.loc('汽车整车')
-                #print("+++++++++++++++++++++++++++++++2")
-                #print rs.loc(u'种植业')
-                print "+++++++++++++++++++++++++++++++++++++++++++++++++++++++"
-                print(out.dtype.names)
-                print out[i]
-
-                # print(type(out[i]),out[i],rs.iloc[-1].values)
-                # out[i] =tuple(rs.iloc[-1].values)
-                # print("===========================================")
-                # print out[i]
-                j = 0
-                for x in self.outputs:
-                    out[i][x] = int(rs.iloc[-1].values[j])
-                    j += 1
-
-                i += 1
-                print("out ................................. 0")
-                #print out[i, :]
-            except Exception as e:
-                print e
-                pass
-        print "out ------------------------------------------------------------------------ "
-        print out
-
+# class MeanReturn(CustomFactor):
+#     inputs = [Returns(window_length=2)]
+#     def compute(self, today, assets, out, returns):
+#         out[:] = np.nanmean(returns, axis=0)
+#
+#
+# class OneHotSector(CustomFactor):
+#     inputs = [RandomUniverse()]
+#     #window_length = 1
+#     window_safe = True
+#     #dtype = np.int64
+#     missing_value = 0
+#     #outputs = get_sector_class()[0]
+#     #outputs,_ = get_sector_class()
+#     outputs = ['highs', 'lows']
+#     xssss,yssss = get_sector_class()
+#     def oneHot_sectors(self,sector_keys):
+#         ##- Convert the Sectors column into binary labels
+#         from sklearn import preprocessing
+#         import pandas as pd
+#         sector_binarizer = preprocessing.LabelBinarizer()
+#         strlbls = map(str, sector_keys)  # LabelBinarizer didn't like float values, so convert to strings
+#         print "strlbls",type(strlbls),strlbls
+#         sector_binarizer.fit(strlbls)
+#         sector_labels_bin = sector_binarizer.transform(strlbls)  # this is now 12 binary columns from 1 categorical
+#
+#         ##- Create a pandas dataFrame from the new binary labels
+#         print(sector_labels_bin)
+#         colNames = []
+#         for i in range(len(sector_labels_bin[0])):
+#             colNames.append("S_Label_" + strlbls[i] + str(i)) #TODO
+#         sLabels = pd.DataFrame(data=sector_labels_bin, index=sector_keys, columns=colNames)
+#         return sLabels
+#
+#     def compute(self, today, assets, out,input):
+#         print "===",self.outputs
+#         print "+++",type(input),np.shape(input),input
+#         print "###",assets
+#         print "&&&",type(out),np.shape(out),out
+#         print type(get_sector_class()),type(self.outputs),type(self.yssss)
+#         print self.yssss
+#         rs = self.oneHot_sectors(self.outputs)
+#         print rs
+#         print rs.index
+#         i = 0
+#         for no in input[0,:].tolist():
+#             print "-----------no",no
+#             try:
+#                 print self.yssss[no]
+#                 #print rs.loc(self.yssss[no])
+#                 print rs.iloc[-1]
+#                 print type(rs.iloc[-1].values),rs.iloc[-1].values
+#                 #print("+++++++++++++++++++++++++++++++1")
+#                 #print rs.loc('汽车整车')
+#                 #print("+++++++++++++++++++++++++++++++2")
+#                 #print rs.loc(u'种植业')
+#                 print "+++++++++++++++++++++++++++++++++++++++++++++++++++++++"
+#                 print(out.dtype.names)
+#                 print out[i]
+#
+#                 # print(type(out[i]),out[i],rs.iloc[-1].values)
+#                 # out[i] =tuple(rs.iloc[-1].values)
+#                 # print("===========================================")
+#                 # print out[i]
+#                 j = 0
+#                 for x in self.outputs:
+#                     out[i][x] = int(rs.iloc[-1].values[j])
+#                     j += 1
+#
+#                 i += 1
+#                 print("out ................................. 0")
+#                 #print out[i, :]
+#             except Exception as e:
+#                 print e
+#                 pass
+#         print "out ------------------------------------------------------------------------ "
+#         print out
 
 
         #dic = get_sector_class()
@@ -140,8 +139,6 @@ class OneHotSector(CustomFactor):
 #
 #                 out[col_ix] = mom[-1]
 
-
-
 import click
 import numpy as np
 import pandas as pd
@@ -159,7 +156,7 @@ from zipline.utils.cli import Date, Timestamp
 
 
 start = '2015-9-1'  # 必须在国内交易日
-end   = '2015-9-10'  # 必须在国内交易日
+end   = '2015-9-30'  # 必须在国内交易日
 
 c,_ = get_sector_class()
 ONEHOTCLASS = tuple(c)
@@ -182,14 +179,14 @@ def make_pipeline(asset_finder):
 
     #illiq = ILLIQ(window_length=20)
 
-    # illiq = ILLIQ(window_length=20,mask = private_universe)
-    # ep = 1/Fundamental(asset_finder).pe
-    # bp = 1/Fundamental(asset_finder).pb
-    # bvps = Fundamental(asset_finder).bvps
-    # rev20 = Returns(inputs=[USEquityPricing.close], window_length=20)
-    # vol20 = AverageDollarVolume(window_length=20)
+    illiq = ILLIQ(window_length=20,mask = private_universe)
+    ep = 1/Fundamental(asset_finder).pe
+    bp = 1/Fundamental(asset_finder).pb
+    bvps = Fundamental(asset_finder).bvps
+    rev20 = Returns(inputs=[USEquityPricing.close], window_length=20,mask = private_universe)
+    vol20 = AverageDollarVolume(window_length=20,mask = private_universe)
     rsi = RSI(window_length=20,mask = private_universe)
-    #market = Fundamental(asset_finder).outstanding
+    market = Fundamental(asset_finder).outstanding
     sector = get_sector(asset_finder=asset_finder,mask=private_universe)
     random = RandomUniverse(mask = private_universe)
     #returns = Returns(window_length=50)
@@ -209,15 +206,17 @@ def make_pipeline(asset_finder):
         # 'vol': vol.zscore(),
         # 'turnover_rate': turnover_rate.log1p().zscore(),
         # 'return': returns.log1p(),
-        # 'ILLIQ':illiq,
-        # 'ep':ep,
-        # 'vol20':vol20,
+        'ILLIQ':illiq,
+        'ep':ep,
+        'bp':bp,
+        'bvps':bvps,
+        'vol20':vol20,
         # #'rsi':rsi.zscore(groupby = sector,mask=rsi.percentile_between(1, 99)),
-        'rsi0': rsi,
-        'rsi1': rsi.zscore(),
-        'rsi2': rsi.zscore(groupby=sector),
+        #'rsi0': rsi,
+        #'rsi1': rsi.zscore(),
+        'rsi': rsi.zscore(groupby=sector),
         # 'rsi3': vol20.demean(groupby=sector),
-        # 'market_rank':market.quantiles(100),
+        'market_rank':market.quantiles(100),
         'sector':sector,
         #'ohs':ohs,
     }
@@ -225,13 +224,11 @@ def make_pipeline(asset_finder):
     pipe = Pipeline(columns=pipe_columns,
            screen=private_universe,
            )
-
-    i = 0 #TODO
+    i = 0
     for c in ONEHOTCLASS:
         #print "xxxx",sector_indict_keys[i]
         pipe.add(c,sector_indict_keys[i])
-        i += 1
-
+        i +=1
     return pipe
 
 
