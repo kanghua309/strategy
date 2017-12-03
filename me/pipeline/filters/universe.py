@@ -86,7 +86,7 @@ def sector_filter(tradeable_count,sector_exposure_limit,smoothing_func = None):
         Filter to control sector exposure
     """
 
-    industry_class = get_sector_class()
+    industry_class,_ = get_sector_class()
     #print("g_inds",g_inds)
     sector_factor = get_sector(industry_class)
     # set thresholds
@@ -185,8 +185,11 @@ def default_china_equity_universe_mask(unmask):
     gem =  load_tushare_df("gem")
     st  =  load_tushare_df("st")
     uset = pd.concat([sme, gem, st])
-    maskdf  = info.drop([y for y in uset['code']], axis=0)  # st,sme,gem 的都不要，稳健型只要主板股票
-    maskdf = maskdf.drop(unmask,axis=0)
+    try:
+        maskdf  = info.drop([y for y in uset['code']], axis=0)  # st,sme,gem 的都不要，稳健型只要主板股票
+        maskdf = maskdf.drop(unmask,axis=0)
+    except:
+        pass
     #Returns a factor indicating membership (=1) in the given iterable of securities
     #print("==enter IsInSymbolsList==")
     class IsInDefaultChinaUniverse(CustomFilter):
@@ -233,7 +236,9 @@ def make_china_equity_universe(
     ufilters = universe_filter(smoothing_func)
     sfilters = sector_filter(target_size,max_group_weight,smoothing_func)
 
-    return (ufilters & sfilters) & mask # &? TODO
-    #return (sfilters)
+    if mask != None:
+        return (ufilters & sfilters) & mask # &? TODO
+
+    return  (ufilters & sfilters)
 
 

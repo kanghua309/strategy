@@ -35,7 +35,7 @@ from me.pipeline.filters.universe import make_china_equity_universe, default_chi
 from zipline.utils.cli import Date, Timestamp
 
 
-start = '2015-9-1'  # 必须在国内交易日
+start = '2015-8-5'  # 必须在国内交易日
 end   = '2015-9-30'  # 必须在国内交易日
 
 c,_ = get_sector_class()
@@ -52,18 +52,28 @@ class ILLIQ(CustomFactor):
         out[:] =(_rets/_vols).mean().values
 
 def make_pipeline(asset_finder):
+    universe = make_china_equity_universe(
+        target_size=2000,
+        #mask=default_china_equity_universe_mask([]),
+        mask=None,
+        max_group_weight=0.01,
+        smoothing_func=lambda f: f.downsample('month_start'),
 
-    private_universe = private_universe_mask(['000001','000002','000005'],asset_finder=asset_finder)
+    )
+
+    #private_universe = private_universe_mask(['000001','000002','000005'],asset_finder=asset_finder)
+    private_universe = universe
     ######################################################################################################
     returns = Returns(inputs=[USEquityPricing.close], window_length=5)  # 预测一周数据
     ######################################################################################################
     ep = 1/Fundamental(asset_finder).pe
     bp = 1/Fundamental(asset_finder).pb
     bvps = Fundamental(asset_finder).bvps
+    market = Fundamental(asset_finder).outstanding
+
 
     rev20 = Returns(inputs=[USEquityPricing.close], window_length=20,mask = private_universe)
     vol20 = AverageDollarVolume(window_length=20,mask = private_universe)
-    market = Fundamental(asset_finder).outstanding
 
     illiq = ILLIQ(window_length=20,mask = private_universe)
     rsi = RSI(window_length=20,mask = private_universe)
@@ -74,31 +84,21 @@ def make_pipeline(asset_finder):
 
 
     pipe_columns = {
-        # 'h2o': h2o.log1p().zscore(),
-        # 'l2o': l2o.log1p().zscore(),
-        # 'c2o': c2o.log1p().zscore(),
-        # 'h2c': h2c.log1p().zscore(),
-        # 'l2c': l2c.log1p().zscore(),
-        # 'h2l': h2l.log1p().zscore(),
-        # 'vol': vol.zscore(),
-        # 'turnover_rate': turnover_rate.log1p().zscore(),
-        # 'return': returns.log1p(),
-        'ILLIQ':illiq,
-        'ep':ep,
-        'bp':bp,
-        'bvps':bvps,
-        'vol20':vol20,
-        'rev20':rev20,
-        'mom':mom,
-        # #'rsi':rsi.zscore(groupby = sector,mask=rsi.percentile_between(1, 99)),
-        #'rsi0': rsi,
-        #'rsi1': rsi.zscore(),
-        'rsi': rsi.zscore(groupby=sector),
-        # 'rsi3': vol20.demean(groupby=sector),
-        'market_rank':market.quantiles(100),
+
+        'ep':ep.zscore(groupby=sector).downsample('month_start'),
+        'bp':bp.zscore(groupby=sector).downsample('month_start'),
+        'bvps':bvps.zscore(groupby=sector).downsample('month_start'),
+        'market_cap': market.zscore(groupby=sector).downsample('month_start'),
+
+        'vol20':vol20.zscore(groupby=sector),
+        'rev20':rev20.zscore(groupby=sector),
+
+        'ILLIQ':illiq.zscore(groupby=sector,mask=illiq.percentile_between(1, 99)),
+        'mom'  :mom.zscore(groupby=sector,mask=mom.percentile_between(1, 99)),
+        'rsi'  :rsi.zscore(groupby=sector,mask=rsi.percentile_between(1, 99)),
         'sector':sector,
-        'returns':returns,
-        #'ohs':ohs,
+        'returns':returns.quantiles(100),
+
     }
     # pipe_screen = (low_returns | high_returns)
     pipe = Pipeline(columns=pipe_columns,
