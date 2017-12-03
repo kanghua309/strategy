@@ -43,7 +43,7 @@ def MarketCap():
     return MarketCap()
 '''
 # can be used outside algo scope - give your asset_finder
-def Fundamental(asset_finder = None):
+def Fundamental(mask = None,asset_finder = None):
     def _sid(sid):
         return asset_finder.retrieve_asset(sid)
     columns = ['pe',  # 市盈率
@@ -101,7 +101,8 @@ def Fundamental(asset_finder = None):
             out.gpr[:] = df.gpr
             out.npr[:] = df.npr
             out.holders[:] = df.holders
-
+    if mask != None:
+        return Fundamental(mask = mask)
     return Fundamental()
 
 '''

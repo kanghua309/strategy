@@ -16,6 +16,8 @@ from zipline.pipeline.loaders import USEquityPricingLoader
 from zipline.utils.calendars import get_calendar
 from zipline.utils.factory import create_simulation_parameters
 from zipline.utils.cli import Date, Timestamp
+from me.pipeline.filters.universe import make_china_equity_universe, default_china_equity_universe_mask, \
+    private_universe_mask
 from zipline.api import (
     attach_pipeline,
     date_rules,
@@ -38,6 +40,13 @@ from zipline.data.bundles.viadb import viadb
 
 N = 10
 def make_pipeline():
+    # universe = make_china_equity_universe(
+    #     target_size = 100,
+    #     mask = default_china_equity_universe_mask(['000001']),
+    #     max_group_weight= 0.01,
+    #     smoothing_func = lambda f: f.downsample('week_start'),
+    # )
+
     dollar_volume = AverageDollarVolume(window_length=1)
     high_dollar_volume = dollar_volume.percentile_between(N, 100)
     recent_returns = Returns(window_length=N, mask=high_dollar_volume)

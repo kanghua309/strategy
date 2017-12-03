@@ -36,7 +36,7 @@ from zipline.utils.cli import Date, Timestamp
 
 
 start = '2015-8-5'  # 必须在国内交易日
-end   = '2015-9-30'  # 必须在国内交易日
+end   = '2015-9-28'  # 必须在国内交易日
 
 c,_ = get_sector_class()
 ONEHOTCLASS = tuple(c)
@@ -53,31 +53,35 @@ class ILLIQ(CustomFactor):
 
 def make_pipeline(asset_finder):
     universe = make_china_equity_universe(
-        target_size=2000,
-        #mask=default_china_equity_universe_mask([]),
+        target_size=300,
+        #mask=default_china_equity_universe_mask(['000001']),
         mask=None,
         max_group_weight=0.01,
-        smoothing_func=lambda f: f.downsample('month_start'),
-
+        smoothing_func=lambda f: f.downsample('week_start'),
+        asset_finder = asset_finder,
     )
 
-    #private_universe = private_universe_mask(['000001','000002','000005'],asset_finder=asset_finder)
+
+
+    #private_universe = private_universe_mask(['000001'],asset_finder=asset_finder)
     private_universe = universe
+    print ("---universe:",private_universe)
+    #print private_universe_mask(['000001','000002','000005'],asset_finder=asset_finder)
     ######################################################################################################
     returns = Returns(inputs=[USEquityPricing.close], window_length=5)  # 预测一周数据
     ######################################################################################################
-    ep = 1/Fundamental(asset_finder).pe
-    bp = 1/Fundamental(asset_finder).pb
-    bvps = Fundamental(asset_finder).bvps
-    market = Fundamental(asset_finder).outstanding
+    ep = 1/Fundamental(mask = private_universe,asset_finder=asset_finder).pe
+    bp = 1/Fundamental(mask = private_universe,asset_finder=asset_finder).pb
+    bvps = Fundamental(mask = private_universe,asset_finder=asset_finder).bvps
+    market = Fundamental(mask = private_universe,asset_finder=asset_finder).outstanding
 
 
     rev20 = Returns(inputs=[USEquityPricing.close], window_length=20,mask = private_universe)
     vol20 = AverageDollarVolume(window_length=20,mask = private_universe)
 
-    illiq = ILLIQ(window_length=20,mask = private_universe)
-    rsi = RSI(window_length=20,mask = private_universe)
-    mom = Momentum()
+    illiq = ILLIQ(window_length=22,mask = private_universe)
+    rsi = RSI(window_length=22,mask = private_universe)
+    mom = Momentum(window_length=252,mask = private_universe)
 
     sector = get_sector(asset_finder=asset_finder,mask=private_universe)
     ONEHOTCLASS,sector_indict_keys = get_sector_by_onehot(asset_finder=asset_finder,mask=private_universe)
@@ -112,13 +116,14 @@ def make_pipeline(asset_finder):
 
 
 
-pd.set_option('display.width', 800)
+pd.set_option('display.width', 8000)
 research = Research()
 #print(research.get_engine()._finder)
 my_pipe = make_pipeline(research.get_engine()._finder)
 result = research.run_pipeline(my_pipe,
                                Date(tz='utc', as_timestamp=True).parser(start),
                                Date(tz='utc', as_timestamp=True).parser(end))
+
 print result
 print type(result)
 print result.reset_index()

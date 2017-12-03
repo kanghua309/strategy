@@ -27,7 +27,7 @@ MARKET_CAP_DOWNLIMIT = 5.0e+9
 ADV_ADJ_DOWNLIMIT = 1.0e+8
 
 
-def universe_filter(smoothing_func = None):
+def universe_filter(smoothing_func = None,asset_finder=None):
     """
     Create a Pipeline producing Filters implementing common acceptance criteria.
     Returns
@@ -36,9 +36,9 @@ def universe_filter(smoothing_func = None):
         Filter to control tradeablility
     """
     factors = {
-     'MarketCap': Fundamental().outstanding,
+     'MarketCap': Fundamental(asset_finder=asset_finder).outstanding,
      'ADV_adj'  : ADV_adj(),
-     'Sector'   : get_sector(),
+     'Sector'   : get_sector(asset_finder=asset_finder),
     }
 
 
@@ -69,7 +69,7 @@ def universe_filter(smoothing_func = None):
 
     return filters
 
-def sector_filter(tradeable_count,sector_exposure_limit,smoothing_func = None):
+def sector_filter(tradeable_count,sector_exposure_limit,smoothing_func = None,asset_finder=None):
 
     """
     Mask for Pipeline in create_tradeable. Limits each sector so as not to be over-exposed
@@ -88,7 +88,7 @@ def sector_filter(tradeable_count,sector_exposure_limit,smoothing_func = None):
 
     industry_class,_ = get_sector_class()
     #print("g_inds",g_inds)
-    sector_factor = get_sector(industry_class)
+    sector_factor = get_sector(industry_class,asset_finder=asset_finder)
     # set thresholds
     sector_size = len(industry_class)
     if sector_exposure_limit < ((1. / sector_size)):
@@ -178,7 +178,7 @@ def sector_filter(tradeable_count,sector_exposure_limit,smoothing_func = None):
     return filters
 
 
-def default_china_equity_universe_mask(unmask):
+def default_china_equity_universe_mask(unmask,asset_finder=None):
     #a_stocks = []
     info = load_tushare_df("basic")
     sme =  load_tushare_df("sme")
@@ -192,13 +192,18 @@ def default_china_equity_universe_mask(unmask):
         pass
     #Returns a factor indicating membership (=1) in the given iterable of securities
     #print("==enter IsInSymbolsList==")
+    def _sid(sid):
+        return asset_finder.retrieve_asset(sid)
     class IsInDefaultChinaUniverse(CustomFilter):
         inputs = [];
         window_length = 1
         def compute(self, today, asset_ids, out, *inputs):
             #print asset_ids
             #print maskset
-            assets  = [sid(id).symbol for id in asset_ids]
+            if asset_finder != None:
+                assets  = [_sid(id).symbol for id in asset_ids]
+            else:
+                assets  = [sid(id).symbol for id in asset_ids]
             #print "--------------"
             #print pd.Series(assets)
             out[:] = pd.Series(assets).isin(maskdf.index)
@@ -207,7 +212,7 @@ def default_china_equity_universe_mask(unmask):
 
 def private_universe_mask(mask,asset_finder = None):
     mask = mask
-    def sid(sid):
+    def _sid(sid):
         return asset_finder.retrieve_asset(sid)
     class IsInPrivateUniverse(CustomFilter):
         inputs = [];
@@ -218,7 +223,10 @@ def private_universe_mask(mask,asset_finder = None):
             # for id in asset_ids:
             #     print id
             #     print type(sid(id))
-            assets  = [sid(id).symbol for id in asset_ids]
+            if asset_finder != None:
+                assets  = [_sid(id).symbol for id in asset_ids]
+            else:
+                assets  = [sid(id).symbol for id in asset_ids]
             #print "--------------"
             #print pd.Series(assets)
             out[:] = pd.Series(assets).isin(mask)
@@ -232,13 +240,12 @@ def make_china_equity_universe(
         mask,
         #groupby,
         max_group_weight,
-        smoothing_func):
-    ufilters = universe_filter(smoothing_func)
-    sfilters = sector_filter(target_size,max_group_weight,smoothing_func)
-
+        smoothing_func,
+        asset_finder = None):
+    ufilters = universe_filter(smoothing_func,asset_finder)
+    sfilters = sector_filter(target_size,max_group_weight,smoothing_func,asset_finder)
     if mask != None:
         return (ufilters & sfilters) & mask # &? TODO
-
     return  (ufilters & sfilters)
 
 

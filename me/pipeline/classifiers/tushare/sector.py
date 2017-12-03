@@ -84,7 +84,6 @@ def get_sector(sector_dict=None,mask = None,asset_finder = None):
         sector_dict,_ = get_sector_class()
     #print("++enter getSector++",len(sector_dict))
     basic=load_tushare_df("basic")
-    #print(asset_finder)
     def _sid(sid):
         return asset_finder.retrieve_asset(sid)
     class Sector(CustomClassifier):  #CustomClassifier 是int , factor 是float
@@ -114,7 +113,9 @@ def get_sector(sector_dict=None,mask = None,asset_finder = None):
         def compute(self, today, assets, out, *inputs):
             rs = self.findSector(assets)
             out[:] = rs
-    return Sector(mask=mask)
+    if mask != None:
+        return Sector(mask=mask)
+    return Sector()
 
 def get_sector_by_onehot(sector_dict=None,mask = None,asset_finder = None):
     if sector_dict is None:
@@ -183,7 +184,10 @@ def get_sector_by_onehot(sector_dict=None,mask = None,asset_finder = None):
                     i += 1
                 idx += 1
             #print out
-    return OneHotSector(mask=mask),sector_indict_keys
+    if mask != None:
+        return OneHotSector(mask=mask),sector_indict_keys
+    else:
+        return OneHotSector(),sector_indict_keys
 
 
 
