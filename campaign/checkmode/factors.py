@@ -26,7 +26,7 @@ from me.pipeline.filters.universe import make_china_equity_universe, default_chi
     private_universe_mask
 from zipline.utils.cli import Date, Timestamp
 
-start = '2017-8-10'   # 必须在国内交易日
+start = '2016-8-10'   # 必须在国内交易日
 end   = '2017-9-11'  # 必须在国内交易日
 
 c,_ = get_sector_class()
@@ -163,7 +163,7 @@ print X.head(10)
 print Y.head(10)
 from modeltest import model_cross_valid,model_fit_and_test
 
-model_cross_valid(Train_X.values,Train_X.values)
+model_cross_valid(Train_X.values,Train_Y.values)
 print ("---------------fit and test")
 model_fit_and_test(Train_X.values,Train_Y.values,Test_X.values,Test_Y.values)
 

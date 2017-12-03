@@ -47,10 +47,25 @@ def model_fit_and_test(TrainX,TrainY,TestX,TestY):
         model = bulid_model(model_name)
         model.fit(TrainX,TrainY)
         print("====================",model_name)
-        print("Residual sum of squares: %.2f"% np.mean((model.predict(TestX) - TestY) ** 2))
-        print model.predict(TestX)
-        print TestY
+        resid = model.predict(TestX) - TestY
+        print("Residual sum of squares: %.2f"% np.mean(resid ** 2))
+        #print model.predict(TestX)
+        #print TestY
         # Explained variance score: 1 is perfect prediction
         print('Variance score: %.2f' % model.score(TestX, TestY))
 
+        from statsmodels.stats.stattools import jarque_bera
+        _, pvalue, _, _ = jarque_bera(resid)
+        print ("Test Residuals Normal", pvalue)
+
+        from statsmodels import regression, stats
+        import statsmodels.api as sms
+        import statsmodels.stats.diagnostic as smd
+        # xs_with_constant = sms.add_constant(np.column_stack((X1,X2,X3,X4)))
+        xs_with_constant = sms.add_constant(TestX)
+        _, pvalue1, _, _ = stats.diagnostic.het_breushpagan(resid, xs_with_constant)
+        print ("Test Heteroskedasticity", pvalue1)
+        ljung_box = smd.acorr_ljungbox(resid, lags=10)
+        print "Lagrange Multiplier Statistics:", ljung_box[0]
+        print "Test Autocorrelation P-values:", ljung_box[1]
 # model_cross_valid(X,Y)
