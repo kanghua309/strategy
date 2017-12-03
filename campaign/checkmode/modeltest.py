@@ -48,7 +48,8 @@ def model_fit_and_test(TrainX,TrainY,TestX,TestY):
         model.fit(TrainX,TrainY)
         print("====================",model_name)
         resid = model.predict(TestX) - TestY
-        print("Residual sum of squares: %.2f"% np.mean(resid ** 2))
+        #print resid
+        print("Residual sum of squares: %f"% np.mean(resid ** 2))
         #print model.predict(TestX)
         #print TestY
         # Explained variance score: 1 is perfect prediction

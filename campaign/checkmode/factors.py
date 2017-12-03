@@ -26,7 +26,7 @@ from me.pipeline.filters.universe import make_china_equity_universe, default_chi
     private_universe_mask
 from zipline.utils.cli import Date, Timestamp
 
-start = '2016-8-10'   # 必须在国内交易日
+start = '2017-8-10'   # 必须在国内交易日
 end   = '2017-9-11'  # 必须在国内交易日
 
 c,_ = get_sector_class()
@@ -84,8 +84,7 @@ def make_pipeline(asset_finder):
         'rsi'  :rsi.zscore(groupby=sector,mask=rsi.percentile_between(1, 99)),
         #'sector':sector,
         #'returns':returns.quantiles(100),
-        'returns': returns,
-
+        'returns': returns.zscore(),
     }
     # pipe_screen = (low_returns | high_returns)
     pipe = Pipeline(columns=pipe_columns,
