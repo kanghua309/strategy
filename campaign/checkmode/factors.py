@@ -14,10 +14,9 @@ from me.pipeline.classifiers.tushare.sector import get_sector,RandomUniverse,get
 from zipline.pipeline.factors import CustomFactor
 from zipline.pipeline.classifiers import CustomClassifier,Latest
 from me.pipeline.factors.boost import Momentum
+import tushare as ts
 
 import talib
-
-
 
 import click
 import numpy as np
@@ -34,12 +33,15 @@ from me.pipeline.filters.universe import make_china_equity_universe, default_chi
     private_universe_mask
 from zipline.utils.cli import Date, Timestamp
 
-
 start = '2015-8-5'  # 必须在国内交易日
 end   = '2015-9-28'  # 必须在国内交易日
 
 c,_ = get_sector_class()
 ONEHOTCLASS = tuple(c)
+
+hs300 = ts.get_hs300s()['code']
+print type(hs300),hs300
+print hs300.tolist()
 
 
 class ILLIQ(CustomFactor):
@@ -52,20 +54,16 @@ class ILLIQ(CustomFactor):
         out[:] =(_rets/_vols).mean().values
 
 def make_pipeline(asset_finder):
-    universe = make_china_equity_universe(
-        target_size=300,
-        #mask=default_china_equity_universe_mask(['000001']),
-        mask=None,
-        max_group_weight=0.01,
-        smoothing_func=lambda f: f.downsample('week_start'),
-        asset_finder = asset_finder,
-    )
+    # universe = make_china_equity_universe(
+    #     target_size=300,
+    #     #mask=default_china_equity_universe_mask(['000001']),
+    #     mask=None,
+    #     max_group_weight=0.01,
+    #     smoothing_func=lambda f: f.downsample('week_start'),
+    #     asset_finder = asset_finder,
+    # )
 
-
-
-    #private_universe = private_universe_mask(['000001'],asset_finder=asset_finder)
-    private_universe = universe
-    #print ("---universe:",private_universe)
+    private_universe = private_universe_mask( hs300.tolist(),asset_finder=asset_finder)
     #print private_universe_mask(['000001','000002','000005'],asset_finder=asset_finder)
     ######################################################################################################
     returns = Returns(inputs=[USEquityPricing.close], window_length=5)  # 预测一周数据
@@ -74,7 +72,6 @@ def make_pipeline(asset_finder):
     bp = 1/Fundamental(mask = private_universe,asset_finder=asset_finder).pb
     bvps = Fundamental(mask = private_universe,asset_finder=asset_finder).bvps
     market = Fundamental(mask = private_universe,asset_finder=asset_finder).outstanding
-
 
     rev20 = Returns(inputs=[USEquityPricing.close], window_length=20,mask = private_universe)
     vol20 = AverageDollarVolume(window_length=20,mask = private_universe)
