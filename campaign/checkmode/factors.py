@@ -65,7 +65,7 @@ def make_pipeline(asset_finder):
 
     #private_universe = private_universe_mask(['000001'],asset_finder=asset_finder)
     private_universe = universe
-    print ("---universe:",private_universe)
+    #print ("---universe:",private_universe)
     #print private_universe_mask(['000001','000002','000005'],asset_finder=asset_finder)
     ######################################################################################################
     returns = Returns(inputs=[USEquityPricing.close], window_length=5)  # 预测一周数据
