@@ -262,8 +262,10 @@ print "============================="
 # imp.fit(X)
 
 quadratic_featurizer  = PolynomialFeatures(interaction_only=True)
-X_train_quadratic = quadratic_featurizer.fit_transform(result.values)
+X_train_quadratic = quadratic_featurizer.fit_transform(result)
 print X_train_quadratic
-print np.shape(X_train_quadratic)
+print np.shape(X_train_quadratic),type(X_train_quadratic)
+
+print quadratic_featurizer.get_feature_names(result.columns),len(quadratic_featurizer.get_feature_names(result.columns))
 
 #print type(result.as_matrix()),result.as_matrix
