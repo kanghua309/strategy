@@ -26,7 +26,7 @@ from me.pipeline.filters.universe import make_china_equity_universe, default_chi
     private_universe_mask
 from zipline.utils.cli import Date, Timestamp
 
-start = '2017-8-10'   # 必须在国内交易日
+start = '2016-8-10'   # 必须在国内交易日
 end   = '2017-9-11'  # 必须在国内交易日
 
 c,_ = get_sector_class()
@@ -57,17 +57,34 @@ def make_pipeline(asset_finder):
     bp = 1/Fundamental(mask = private_universe,asset_finder=asset_finder).pb
     bvps = Fundamental(mask = private_universe,asset_finder=asset_finder).bvps
     market = Fundamental(mask = private_universe,asset_finder=asset_finder).outstanding
+    totals = Fundamental(mask = private_universe,asset_finder=asset_finder).totals
+    totalAssets = Fundamental(mask = private_universe,asset_finder=asset_finder).totalAssets
+    fixedAssets = Fundamental(mask = private_universe,asset_finder=asset_finder).fixedAssets
+    esp = Fundamental(mask = private_universe,asset_finder=asset_finder).esp
+    rev = Fundamental(mask = private_universe,asset_finder=asset_finder).rev
+    profit = Fundamental(mask = private_universe,asset_finder=asset_finder).profit
+    gpr = Fundamental(mask = private_universe,asset_finder=asset_finder).gpr
+    npr = Fundamental(mask = private_universe,asset_finder=asset_finder).npr
 
+    rev10 = Returns(inputs=[USEquityPricing.close], window_length=10,mask = private_universe)
+    vol10 = AverageDollarVolume(window_length=20,mask = private_universe)
     rev20 = Returns(inputs=[USEquityPricing.close], window_length=20,mask = private_universe)
     vol20 = AverageDollarVolume(window_length=20,mask = private_universe)
+    rev30 = Returns(inputs=[USEquityPricing.close], window_length=30,mask = private_universe)
+    vol30 = AverageDollarVolume(window_length=20,mask = private_universe)
 
-    illiq = ILLIQ(window_length=22,mask = private_universe)
-    rsi = RSI(window_length=22,mask = private_universe)
-    mom = Momentum(window_length=252,mask = private_universe)
+    illiq22 = ILLIQ(window_length=22,mask = private_universe)
+    illiq5 = ILLIQ(window_length=5,mask = private_universe)
+
+    rsi5 = RSI(window_length=5,mask = private_universe)
+    rsi22 = RSI(window_length=22,mask = private_universe)
+
+    mom5 = Momentum(window_length=5,mask = private_universe)
+    mom22 = Momentum(window_length=22,mask = private_universe)
+
 
     sector = get_sector(asset_finder=asset_finder,mask=private_universe)
     ONEHOTCLASS,sector_indict_keys = get_sector_by_onehot(asset_finder=asset_finder,mask=private_universe)
-
 
     pipe_columns = {
 
@@ -75,16 +92,33 @@ def make_pipeline(asset_finder):
         'bp':bp.zscore(groupby=sector).downsample('month_start'),
         'bvps':bvps.zscore(groupby=sector).downsample('month_start'),
         'market_cap': market.zscore(groupby=sector).downsample('month_start'),
+        'totals': totals.zscore(groupby=sector).downsample('month_start'),
+        'totalAssets': totalAssets.zscore(groupby=sector).downsample('month_start'),
+        'fixedAssets': fixedAssets.zscore(groupby=sector).downsample('month_start'),
+        'esp': esp.zscore(groupby=sector).downsample('month_start'),
+        'rev': rev.zscore(groupby=sector).downsample('month_start'),
+        'profit': profit.zscore(groupby=sector).downsample('month_start'),
+        'gpr': gpr.zscore(groupby=sector).downsample('month_start'),
+        'npr': npr.zscore(groupby=sector).downsample('month_start'),
+        'vol10': vol10.zscore(groupby=sector),
+        'rev10': rev10.zscore(groupby=sector),
+        'vol20': vol20.zscore(groupby=sector),
+        'rev20': rev20.zscore(groupby=sector),
+        'vol30':vol30.zscore(groupby=sector),
+        'rev30':rev30.zscore(groupby=sector),
 
-        'vol20':vol20.zscore(groupby=sector),
-        'rev20':rev20.zscore(groupby=sector),
+        'ILLIQ5':illiq5.zscore(groupby=sector,mask=illiq5.percentile_between(1, 99)),
+        'ILLIQ22':illiq22.zscore(groupby=sector, mask=illiq22.percentile_between(1, 99)),
 
-        'ILLIQ':illiq.zscore(groupby=sector,mask=illiq.percentile_between(1, 99)),
-        'mom'  :mom.zscore(groupby=sector,mask=mom.percentile_between(1, 99)),
-        'rsi'  :rsi.zscore(groupby=sector,mask=rsi.percentile_between(1, 99)),
+        'mom5'  :mom5.zscore(groupby=sector,mask=mom5.percentile_between(1, 99)),
+        'mom22': mom22.zscore(groupby=sector, mask=mom22.percentile_between(1, 99)),
+
+        'rsi5'  :rsi5.zscore(groupby=sector,mask=rsi5.percentile_between(1, 99)),
+        'rsi22': rsi22.zscore(groupby=sector, mask=rsi22.percentile_between(1, 99)),
+
         #'sector':sector,
         #'returns':returns.quantiles(100),
-        'returns': returns.zscore(),
+        'returns': returns * 100,
     }
     # pipe_screen = (low_returns | high_returns)
     pipe = Pipeline(columns=pipe_columns,
@@ -125,7 +159,7 @@ print "============================="
 # # from sklearn.preprocessing import Imputer
 # imp = Imputer(missing_values='NaN', strategy='mean', axis=0)
 # imp.fit(X)
-
+#
 # quadratic_featurizer  = PolynomialFeatures(interaction_only=True)
 # X_train_quadratic = quadratic_featurizer.fit_transform(result)
 # print X_train_quadratic
@@ -140,33 +174,51 @@ print "============================="
 X = result.drop('returns', 1)
 Y = result['returns']
 
-test_size=100
-Train_X = X[:-test_size]
-Train_Y = Y[:-test_size]
-Test_X  = X[-test_size:]
-Test_Y  = Y[-test_size:]
+print ("total data size :",len(result))
+test_size=2000
+Train_X = X[:-test_size].values
+Train_Y = Y[:-test_size].values
+Test_X  = X[-test_size:].values
+Test_Y  = Y[-test_size:].values
 
 print ("*******************************************")
-print Test_Y.head(10),len(Test_Y)
-print Test_X.head(10),len(Test_X)
+# print Test_Y.head(10),len(Test_Y)
+# print Test_X.head(10),len(Test_X)
+# #
+# #
+# # TRAIN_X = X[0:]
+# # TRAIN_Y = array[0:400,13]
+# #
+# # TEST_X = array[400:,0:13]
+# # TEST_Y = array[400:,13]
 #
 #
-# TRAIN_X = X[0:]
-# TRAIN_Y = array[0:400,13]
-#
-# TEST_X = array[400:,0:13]
-# TEST_Y = array[400:,13]
+# print X.head(10)
+# print Y.head(10)
+
+#quadratic_featurizer  = PolynomialFeatures(interaction_only=True)
+#Train_X = quadratic_featurizer.fit_transform(Train_X)
+#Test_X = quadratic_featurizer.fit_transform(Test_X)
+
+# Train_Y = np.diff(Train_Y)
+# Test_Y = np.diff(Test_Y)
+# import scipy.stats as stats
+# Train_Y = stats.boxcox(Train_Y)[0]
+# Test_Y = stats.boxcox(Test_Y)[0]
+
+#print X_train_quadratic
+#print np.shape(X_train_quadratic),type(X_train_quadratic)
+# print quadratic_featurizer.get_feature_names(result.columns),len(quadratic_featurizer.get_feature_names(result.columns))
 
 
-print X.head(10)
-print Y.head(10)
 from modeltest import model_cross_valid,model_fit_and_test
+model_cross_valid(Train_X[0:],Train_Y)
+print ("---------------fit and test-------------")
+model_fit_and_test(Train_X[0:],Train_Y,Test_X[0:],Test_Y)
 
-model_cross_valid(Train_X.values,Train_Y.values)
-print ("---------------fit and test")
-model_fit_and_test(Train_X.values,Train_Y.values,Test_X.values,Test_Y.values)
+
 
 
 
 #print type(result.as_matrix()),result.as_matrix
-
+print ("-------------------------------------------------------------------------")

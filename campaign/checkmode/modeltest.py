@@ -31,28 +31,37 @@ def model_cross_valid(X,Y):
     scoring = 'neg_mean_squared_error'
     # + random fest boost lstm gbdt
 
-    for model_name in [LinearRegression,Ridge,Lasso,ElasticNet,KNeighborsRegressor,DecisionTreeRegressor,SVR,RandomForestRegressor,AdaBoostRegressor,GradientBoostingRegressor]:
+    for model_name in [LinearRegression,ElasticNet]:
+    #for model_name in [LinearRegression,Ridge,Lasso,ElasticNet,KNeighborsRegressor,DecisionTreeRegressor,SVR,RandomForestRegressor,AdaBoostRegressor,GradientBoostingRegressor]:
         model = bulid_model(model_name)
         results = model_selection.cross_val_score(model, X, Y, cv=kfold, scoring=scoring)
         print(model_name,results.mean())
 
 import numpy as np
+import matplotlib.pyplot as plt
+
 def model_fit_and_test(TrainX,TrainY,TestX,TestY):
     def bulid_model(model_name):
         model = model_name()
         return model
-
-    for model_name in [LinearRegression, Ridge, Lasso, ElasticNet, KNeighborsRegressor, DecisionTreeRegressor, SVR,
-                       RandomForestRegressor, AdaBoostRegressor, GradientBoostingRegressor]:
+    #for model_name in [LinearRegression, Ridge, Lasso, ElasticNet, KNeighborsRegressor, DecisionTreeRegressor, SVR,RandomForestRegressor, AdaBoostRegressor, GradientBoostingRegressor]:
+    for model_name in [LinearRegression, ElasticNet]:
         model = bulid_model(model_name)
         model.fit(TrainX,TrainY)
-        print("====================",model_name)
+        print(model_name)
         resid = model.predict(TestX) - TestY
         #print resid
         print("Residual sum of squares: %f"% np.mean(resid ** 2))
         #print model.predict(TestX)
         #print TestY
         # Explained variance score: 1 is perfect prediction
+        plt.scatter(model.predict(TestX), resid);
+        plt.axhline(0, color='red')
+        plt.xlabel('Predicted Values')
+        plt.ylabel('Residuals')
+        #plt.xlim([1, 50])
+        plt.show()
+
         print('Variance score: %.2f' % model.score(TestX, TestY))
 
         from statsmodels.stats.stattools import jarque_bera
@@ -67,6 +76,10 @@ def model_fit_and_test(TrainX,TrainY,TestX,TestY):
         _, pvalue1, _, _ = stats.diagnostic.het_breushpagan(resid, xs_with_constant)
         print ("Test Heteroskedasticity", pvalue1)
         ljung_box = smd.acorr_ljungbox(resid, lags=10)
-        print "Lagrange Multiplier Statistics:", ljung_box[0]
+
+        #print "Lagrange Multiplier Statistics:", ljung_box[0]
         print "Test Autocorrelation P-values:", ljung_box[1]
-# model_cross_valid(X,Y)
+        if any(ljung_box[1] < 0.05):
+            print "The residuals are autocorrelated."
+        else:
+            print "The residuals are not autocorrelated."
