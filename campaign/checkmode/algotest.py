@@ -89,29 +89,9 @@ def BasicFactorRegress(inputs, window_length, mask, n_fwd_days, trigger_date=Non
             X = shifted_X[n_fwd_days:]
             Y = Y[n_fwd_days:]
             n_time, n_stocks, n_factors = X.shape
-
-            #
-            # # Look for biggest up and down movers
-            # upper = np.nanpercentile(Y, upper_percentile, axis=1)[:, np.newaxis]
-            # lower = np.nanpercentile(Y, lower_percentile, axis=1)[:, np.newaxis]
-            #
-            # upper_mask = (Y >= upper)
-            # lower_mask = (Y <= lower)
-            #
-            # mask = upper_mask | lower_mask  # This also drops nans
-            # mask = mask.flatten()
-            #
-            # # Only try to predict whether a stock moved up/down relative to other stocks
-            # Y_binary = np.zeros(n_time * n_stocks)
-            # Y_binary[upper_mask.flatten()] = 1
-            # Y_binary[lower_mask.flatten()] = -1
-
             # Flatten X
             X = X.reshape((n_time * n_stocks, n_factors))
-
-            # Drop stocks that did not move much (i.e. are in the 30th to 70th percentile)
-            # X = X[mask]
-            # Y_binary = Y_binary[mask]
+            Y = Y.reshape((n_time * n_stocks))
 
             return X, Y
 
@@ -130,55 +110,52 @@ def BasicFactorRegress(inputs, window_length, mask, n_fwd_days, trigger_date=Non
             if (not self.init) :
             #if (not self.init) or (today.weekday == 0):  # Monday
                 # Instantiate sklearn objects
-                self.imputer = preprocessing.Imputer()
-                self.scaler = preprocessing.MinMaxScaler()
+                # self.imputer = preprocessing.Imputer()
+                # self.scaler = preprocessing.MinMaxScaler()
                 self.clf = LinearRegression()
                 #print "debug factor regress inputs:",len(inputs),inputs
-                # Stack factor rankings
-                print("input:",np.shape(inputs))
-                print("returns:",np.shape(returns))
+                #print("input:",np.shape(inputs),inputs)
+                # print("returns:",np.shape(returns))
                 X = np.dstack(inputs)  # (time, stocks, factors)  按时间组织了
                 Y = returns  # (time, stocks)
-                #print "debug factor regress X:", np.shape(X),X
-                #print "debug factor regress Y:", np.shape(Y),Y
-
                 # Shift data to match with future returns and binarize
                 # returns based on their
                 X, Y = self.__shift_mask_data(X, Y, n_fwd_days)  #n天的数值被展开成1维的了- 每个factor 按天展开
-                #print "debug factor regress aftershift X:", np.shape(X),X
-                #print "debug factor regress aftershift Y:", np.shape(Y),Y
 
-                X = self.imputer.fit_transform(X)  #缺失值处理
-                X = self.scaler.fit_transform(X)   #缩放处理
-
+                #X = self.imputer.fit_transform(X)  #缺失值处理
+                #X = self.scaler.fit_transform(X)   #缩放处理
                 # Fit the classifier
-                print np.shape(X)
-                print np.shape(Y)
+
+                X  = np.nan_to_num(X)
+                Y  = np.nan_to_num(Y)
                 self.clf.fit(X, Y)
                 self.init = True
                 # Predict
                 # Get most recent factor values (inputs always has the full history)
             last_factor_values = self.__get_last_values(inputs)
-            # last_factor_values = self.imputer.transform(last_factor_values)
-            # last_factor_values = self.scaler.transform(last_factor_values)
+            #print (last_factor_values)
+            last_factor_values = np.nan_to_num(last_factor_values)
+
+            #last_factor_values = self.imputer.transform(last_factor_values)
+            #last_factor_values = self.scaler.transform(last_factor_values)
             #print "debug factor regress last_factor_values:", np.shape(last_factor_values),last_factor_values
 
-            # Predict the probability for each stock going up
-            # (column 2 of the output of .predict_proba()) and
-            # return it via assignment to out.
-            out[:] = self.clf.predict_proba(last_factor_values)[:, 1] #每行中的列1
+            print self.clf.predict(last_factor_values)
+            out[:] = self.clf.predict(last_factor_values)
     return BasicFactorRegress(inputs=inputs,window_length=window_length,mask=mask)
 
 
 def make_pipeline(asset_finder):
 
     private_universe = private_universe_mask( hs300.tolist(),asset_finder=asset_finder)
+    #private_universe = private_universe_mask( ['000001','000002','000005'],asset_finder=asset_finder)
+
     #print private_universe_mask(['000001','000002','000005'],asset_finder=asset_finder)
     ######################################################################################################
     returns = Returns(inputs=[USEquityPricing.close], window_length=5)  # 预测一周数据
     ######################################################################################################
-    ep = 1/Fundamental(mask = private_universe,asset_finder=asset_finder).pe
-    bp = 1/Fundamental(mask = private_universe,asset_finder=asset_finder).pb
+    pe = Fundamental(mask = private_universe,asset_finder=asset_finder).pe
+    pb = Fundamental(mask = private_universe,asset_finder=asset_finder).pb
     bvps = Fundamental(mask = private_universe,asset_finder=asset_finder).bvps
     market = Fundamental(mask = private_universe,asset_finder=asset_finder).outstanding
     totals = Fundamental(mask = private_universe,asset_finder=asset_finder).totals
@@ -212,37 +189,34 @@ def make_pipeline(asset_finder):
 
     pipe_columns = {
 
-        # 'ep':ep.zscore(groupby=sector).downsample('month_start'),
-        # 'bp':bp.zscore(groupby=sector).downsample('month_start'),
-        # 'bvps':bvps.zscore(groupby=sector).downsample('month_start'),
-        # 'market_cap': market.zscore(groupby=sector).downsample('month_start'),
-        # 'totals': totals.zscore(groupby=sector).downsample('month_start'),
-        # 'totalAssets': totalAssets.zscore(groupby=sector).downsample('month_start'),
-        # 'fixedAssets': fixedAssets.zscore(groupby=sector).downsample('month_start'),
-        # 'esp': esp.zscore(groupby=sector).downsample('month_start'),
-        # 'rev': rev.zscore(groupby=sector).downsample('month_start'),
-        # 'profit': profit.zscore(groupby=sector).downsample('month_start'),
-        # 'gpr': gpr.zscore(groupby=sector).downsample('month_start'),
-        # 'npr': npr.zscore(groupby=sector).downsample('month_start'),
-        # 'vol10': vol10.zscore(groupby=sector),
-        # 'rev10': rev10.zscore(groupby=sector),
-        # 'vol20': vol20.zscore(groupby=sector),
-        # 'rev20': rev20.zscore(groupby=sector),
-        # 'vol30':vol30.zscore(groupby=sector),
-        # 'rev30':rev30.zscore(groupby=sector),
-        #
-        # 'ILLIQ5':illiq5.zscore(groupby=sector,mask=illiq5.percentile_between(1, 99)),
-        # 'ILLIQ22':illiq22.zscore(groupby=sector, mask=illiq22.percentile_between(1, 99)),
-        #
-        # 'mom5'  :mom5.zscore(groupby=sector,mask=mom5.percentile_between(1, 99)),
-        # 'mom22': mom22.zscore(groupby=sector, mask=mom22.percentile_between(1, 99)),
-        #
-        # 'rsi5'  :rsi5.zscore(groupby=sector,mask=rsi5.percentile_between(1, 99)),
-        'rsi22': rsi22.zscore(groupby=sector, mask=rsi22.percentile_between(1, 99)),
+        'pe':pe.zscore(groupby=sector).downsample('month_start'),
+        'pb':pb.zscore(groupby=sector).downsample('month_start'),
+        'bvps':bvps.zscore(groupby=sector).downsample('month_start'),
+        'market_cap': market.zscore(groupby=sector).downsample('month_start'),
+        'totals': totals.zscore(groupby=sector).downsample('month_start'),
+        'totalAssets': totalAssets.zscore(groupby=sector).downsample('month_start'),
+        'fixedAssets': fixedAssets.zscore(groupby=sector).downsample('month_start'),
+        'esp': esp.zscore(groupby=sector).downsample('month_start'),
+        'rev': rev.zscore(groupby=sector).downsample('month_start'),
+        'profit': profit.zscore(groupby=sector).downsample('month_start'),
+        'gpr': gpr.zscore(groupby=sector).downsample('month_start'),
+        'npr': npr.zscore(groupby=sector).downsample('month_start'),
+        'vol10': vol10.zscore(groupby=sector),
+        'rev10': rev10.zscore(groupby=sector),
+        'vol20': vol20.zscore(groupby=sector),
+        'rev20': rev20.zscore(groupby=sector),
+        'vol30':vol30.zscore(groupby=sector),
+        'rev30':rev30.zscore(groupby=sector),
 
-        #'sector':sector,
-        #'returns':returns.quantiles(100),
-        #'returns': returns * 100,
+        'ILLIQ5':illiq5.zscore(groupby=sector),
+        'ILLIQ22':illiq22.zscore(groupby=sector),
+
+        'mom5'  :mom5.zscore(groupby=sector),
+        'mom22': mom22.zscore(groupby=sector),
+
+        'rsi5' :rsi5.zscore(groupby=sector),
+        'rsi22': rsi22.zscore(groupby=sector),
+
     }
 
     from collections import OrderedDict
@@ -255,11 +229,19 @@ def make_pipeline(asset_finder):
         factors_pipe[name] = f
         print (name,f)
 
+    i = 0
+    for c in ONEHOTCLASS:
+        c.window_safe = True
+        factors_pipe[sector_indict_keys[i]] = c
+        print (c,sector_indict_keys[i])
+        i +=1
+
+
     predict = BasicFactorRegress(inputs=factors_pipe.values(), window_length=100, mask=private_universe,n_fwd_days = 5)  # 进行预测，5天后价格
 
     #TODO sector onehot
     pipe_final_columns = {
-      'Predict Factor':predict,
+      'Predict Factor':predict.downsample('week_start'),
     }
     pipe = Pipeline(columns=pipe_final_columns,
                     screen=private_universe,)
@@ -340,8 +322,7 @@ sim_params = create_simulation_parameters(
 #######################################################################
 def rebalance(context, data):
     print ("data----")
-    X = context.pipeline_data.drop('returns', 1)
-    Y = context.pipeline_data['returns']
+    print context.pipeline_data
 
     #print type(data)
     #print data.head(10)
