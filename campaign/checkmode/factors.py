@@ -51,9 +51,9 @@ def make_pipeline(asset_finder):
     private_universe = private_universe_mask( hs300.tolist(),asset_finder=asset_finder)
     #print private_universe_mask(['000001','000002','000005'],asset_finder=asset_finder)
     ######################################################################################################
-    returns = Returns(inputs=[USEquityPricing.close], window_length=5)  # 预测一周数据
+    returns = Returns(inputs=[USEquityPricing.close], window_length=5, mask = private_universe)  # 预测一周数据
     ######################################################################################################
-    ep = 1/Fundamental(mask = private_universe,asset_finder=asset_finder).pe
+    ep = 1/Fundamental(mask = private_universe,asset_finder=asset_finder).pe.latest
     bp = 1/Fundamental(mask = private_universe,asset_finder=asset_finder).pb
     bvps = Fundamental(mask = private_universe,asset_finder=asset_finder).bvps
     market = Fundamental(mask = private_universe,asset_finder=asset_finder).outstanding
@@ -100,25 +100,25 @@ def make_pipeline(asset_finder):
         'profit': profit.zscore(groupby=sector).downsample('month_start'),
         'gpr': gpr.zscore(groupby=sector).downsample('month_start'),
         'npr': npr.zscore(groupby=sector).downsample('month_start'),
-        'vol10': vol10.zscore(groupby=sector),
-        'rev10': rev10.zscore(groupby=sector),
-        'vol20': vol20.zscore(groupby=sector),
-        'rev20': rev20.zscore(groupby=sector),
-        'vol30':vol30.zscore(groupby=sector),
-        'rev30':rev30.zscore(groupby=sector),
+        'vol10': vol10.zscore(groupby=sector).downsample('week_start'),
+        'rev10': rev10.zscore(groupby=sector).downsample('week_start'),
+        'vol20': vol20.zscore(groupby=sector).downsample('week_start'),
+        'rev20': rev20.zscore(groupby=sector).downsample('week_start'),
+        'vol30':vol30.zscore(groupby=sector).downsample('week_start'),
+        'rev30':rev30.zscore(groupby=sector).downsample('week_start'),
 
-        'ILLIQ5':illiq5.zscore(groupby=sector,mask=illiq5.percentile_between(1, 99)),
-        'ILLIQ22':illiq22.zscore(groupby=sector, mask=illiq22.percentile_between(1, 99)),
+        'ILLIQ5':illiq5.zscore(groupby=sector,mask=illiq5.percentile_between(1, 99)).downsample('week_start'),
+        'ILLIQ22':illiq22.zscore(groupby=sector, mask=illiq22.percentile_between(1, 99)).downsample('week_start'),
 
-        'mom5'  :mom5.zscore(groupby=sector,mask=mom5.percentile_between(1, 99)),
-        'mom22': mom22.zscore(groupby=sector, mask=mom22.percentile_between(1, 99)),
+        'mom5'  :mom5.zscore(groupby=sector,mask=mom5.percentile_between(1, 99)).downsample('week_start'),
+        'mom22': mom22.zscore(groupby=sector, mask=mom22.percentile_between(1, 99)).downsample('week_start'),
 
-        'rsi5'  :rsi5.zscore(groupby=sector,mask=rsi5.percentile_between(1, 99)),
-        'rsi22': rsi22.zscore(groupby=sector, mask=rsi22.percentile_between(1, 99)),
+        'rsi5'  :rsi5.zscore(groupby=sector,mask=rsi5.percentile_between(1, 99)).downsample('week_start'),
+        'rsi22': rsi22.zscore(groupby=sector, mask=rsi22.percentile_between(1, 99)).downsample('week_start'),
 
         #'sector':sector,
         #'returns':returns.quantiles(100),
-        'returns': returns * 100,
+        'returns': returns.downsample('week_start') * 100,
     }
     # pipe_screen = (low_returns | high_returns)
     pipe = Pipeline(columns=pipe_columns,

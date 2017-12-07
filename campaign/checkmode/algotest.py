@@ -11,6 +11,7 @@ from zipline.algorithm import TradingAlgorithm
 from zipline.data.bundles.core import load
 from zipline.data.data_portal import DataPortal
 from zipline.finance.trading import TradingEnvironment
+from zipline.finance.execution import MarketOrder
 from zipline.pipeline.data import USEquityPricing
 from zipline.pipeline.loaders import USEquityPricingLoader
 from zipline.utils.calendars import get_calendar
@@ -18,6 +19,9 @@ from zipline.utils.factory import create_simulation_parameters
 from zipline.utils.cli import Date, Timestamp
 from me.pipeline.filters.universe import make_china_equity_universe, default_china_equity_universe_mask, \
     private_universe_mask
+
+
+
 from zipline.api import (
     attach_pipeline,
     date_rules,
@@ -27,7 +31,8 @@ from zipline.api import (
     schedule_function,
     symbol,
     get_datetime,
-    order
+    order,
+    order_target_percent
 )
 import pandas as pd
 import os
@@ -57,6 +62,9 @@ from me.pipeline.factors.tsfactor import Fundamental
 from me.pipeline.filters.universe import make_china_equity_universe, default_china_equity_universe_mask, \
     private_universe_mask
 from zipline.utils.cli import Date, Timestamp
+
+NUM_LONG_POSITIONS=20
+NUM_SHORT_POSITIONS=20
 
 start = '2016-8-10'   # 必须在国内交易日
 end   = '2017-8-11'  # 必须在国内交易日
@@ -107,7 +115,9 @@ def BasicFactorRegress(inputs, window_length, mask, n_fwd_days, trigger_date=Non
             #if trigger_date != None:
             #    today != np.datetime64(trigger_date)
             #    return None
+            #print("TO -------------- Compute ----------------------")
             if (not self.init) :
+                #print("TO -------------- Training ----------------------")
             #if (not self.init) or (today.weekday == 0):  # Monday
                 # Instantiate sklearn objects
                 # self.imputer = preprocessing.Imputer()
@@ -125,11 +135,10 @@ def BasicFactorRegress(inputs, window_length, mask, n_fwd_days, trigger_date=Non
                 #X = self.imputer.fit_transform(X)  #缺失值处理
                 #X = self.scaler.fit_transform(X)   #缩放处理
                 # Fit the classifier
-
                 X  = np.nan_to_num(X)
                 Y  = np.nan_to_num(Y)
                 self.clf.fit(X, Y)
-                self.init = True
+                #self.init = True
                 # Predict
                 # Get most recent factor values (inputs always has the full history)
             last_factor_values = self.__get_last_values(inputs)
@@ -140,7 +149,7 @@ def BasicFactorRegress(inputs, window_length, mask, n_fwd_days, trigger_date=Non
             #last_factor_values = self.scaler.transform(last_factor_values)
             #print "debug factor regress last_factor_values:", np.shape(last_factor_values),last_factor_values
 
-            print self.clf.predict(last_factor_values)
+            #print self.clf.predict(last_factor_values)
             out[:] = self.clf.predict(last_factor_values)
     return BasicFactorRegress(inputs=inputs,window_length=window_length,mask=mask)
 
@@ -152,7 +161,7 @@ def make_pipeline(asset_finder):
 
     #print private_universe_mask(['000001','000002','000005'],asset_finder=asset_finder)
     ######################################################################################################
-    returns = Returns(inputs=[USEquityPricing.close], window_length=5)  # 预测一周数据
+    returns = Returns(inputs=[USEquityPricing.close], window_length=5,mask = private_universe)  # 预测一周数据
     ######################################################################################################
     pe = Fundamental(mask = private_universe,asset_finder=asset_finder).pe
     pb = Fundamental(mask = private_universe,asset_finder=asset_finder).pb
@@ -201,21 +210,21 @@ def make_pipeline(asset_finder):
         'profit': profit.zscore(groupby=sector).downsample('month_start'),
         'gpr': gpr.zscore(groupby=sector).downsample('month_start'),
         'npr': npr.zscore(groupby=sector).downsample('month_start'),
-        'vol10': vol10.zscore(groupby=sector),
-        'rev10': rev10.zscore(groupby=sector),
-        'vol20': vol20.zscore(groupby=sector),
-        'rev20': rev20.zscore(groupby=sector),
-        'vol30':vol30.zscore(groupby=sector),
-        'rev30':rev30.zscore(groupby=sector),
+        'vol10': vol10.zscore(groupby=sector).downsample('week_start'),
+        'rev10': rev10.zscore(groupby=sector).downsample('week_start'),
+        'vol20': vol20.zscore(groupby=sector).downsample('week_start'),
+        'rev20': rev20.zscore(groupby=sector).downsample('week_start'),
+        'vol30':vol30.zscore(groupby=sector).downsample('week_start'),
+        'rev30':rev30.zscore(groupby=sector).downsample('week_start'),
 
-        'ILLIQ5':illiq5.zscore(groupby=sector),
-        'ILLIQ22':illiq22.zscore(groupby=sector),
+        'ILLIQ5':illiq5.zscore(groupby=sector).downsample('week_start'),
+        'ILLIQ22':illiq22.zscore(groupby=sector).downsample('week_start'),
 
-        'mom5'  :mom5.zscore(groupby=sector),
-        'mom22': mom22.zscore(groupby=sector),
+        'mom5'  :mom5.zscore(groupby=sector).downsample('week_start'),
+        'mom22': mom22.zscore(groupby=sector).downsample('week_start'),
 
-        'rsi5' :rsi5.zscore(groupby=sector),
-        'rsi22': rsi22.zscore(groupby=sector),
+        'rsi5' :rsi5.zscore(groupby=sector).downsample('week_start'),
+        'rsi22': rsi22.zscore(groupby=sector).downsample('week_start'),
 
     }
 
@@ -227,24 +236,31 @@ def make_pipeline(asset_finder):
     for name, f in pipe_columns.items():
         f.window_safe = True
         factors_pipe[name] = f
-        print (name,f)
+        #print (name,f)
 
     i = 0
     for c in ONEHOTCLASS:
         c.window_safe = True
         factors_pipe[sector_indict_keys[i]] = c
-        print (c,sector_indict_keys[i])
+        #print (c,sector_indict_keys[i])
         i +=1
 
 
-    predict = BasicFactorRegress(inputs=factors_pipe.values(), window_length=100, mask=private_universe,n_fwd_days = 5)  # 进行预测，5天后价格
+    predict = BasicFactorRegress(inputs=factors_pipe.values(), window_length=256, mask=private_universe,n_fwd_days = 5)
+    predict_rank = predict.rank(mask=private_universe)
 
+    longs = predict_rank.top(NUM_LONG_POSITIONS)
+    shorts = predict_rank.bottom(NUM_SHORT_POSITIONS)
+    long_short_screen = (longs | shorts)
     #TODO sector onehot
     pipe_final_columns = {
       'Predict Factor':predict.downsample('week_start'),
+      'longs': longs.downsample('week_start'),
+      'shorts': shorts.downsample('week_start'),
+      'predict_rank': predict_rank.downsample('week_start'),
     }
     pipe = Pipeline(columns=pipe_final_columns,
-                    screen=private_universe,)
+                    screen=long_short_screen,)
     return pipe
 
 ############################################# bundle #############################################
@@ -321,26 +337,45 @@ sim_params = create_simulation_parameters(
 
 #######################################################################
 def rebalance(context, data):
-    print ("data----")
-    print context.pipeline_data
+    print ("rebalance:",get_datetime())
+    #print context.pipeline_data
+    pipeline_data = context.pipeline_data
+    keys = list(context.posset)
+    for asset in keys:
+        if data.can_trade(asset):
+           print("flattern:",asset)
+           order_target_percent(asset = asset,target = 0.0,style = MarketOrder())
+           del context.posset[asset]
 
-    #print type(data)
-    #print data.head(10)
-    print("rebalance")
+    for asset,value in pipeline_data[pipeline_data['shorts'] == True].iterrows():
+        if data.can_trade(asset):
+            print("short:", asset,- 1.0/NUM_SHORT_POSITIONS)
+            order_target_percent(asset = asset,target = -1.0/NUM_SHORT_POSITIONS,style = MarketOrder())
+            context.posset[asset] = False
+
+    for asset,value in pipeline_data[pipeline_data['longs'] == True].iterrows():
+        #print type(label),value
+        if data.can_trade(asset):
+            print("long:", asset,1.0/NUM_LONG_POSITIONS)
+            order_target_percent(asset = asset,target = 1.0/NUM_LONG_POSITIONS,style = MarketOrder())
+            context.posset[asset] = True
+    print("rebalance over")
 
 
 def initialize(context):
     print("hello world")
     attach_pipeline(make_pipeline(asset_finder=None), 'my_pipeline')
-    schedule_function(rebalance, date_rules.week_end(days_offset=0), half_days=True)
+    schedule_function(rebalance, date_rules.week_start(days_offset=0), half_days=True)
+    context.posset = {}
     # record my portfolio variables at the end of day
 
 def handle_data(context, data):
-    print symbol('000001'),data.current(symbol('000001'), 'price')
+    #print symbol('000001'),data.current(symbol('000001'), 'price')
+    pass
 
 def before_trading_start(context, data):
     context.pipeline_data = pipeline_output('my_pipeline')
-    print("pipeline_data",type(context.pipeline_data))
+    #print("pipeline_data",type(context.pipeline_data))
     pass
 
 algor_obj = TradingAlgorithm(initialize=initialize, handle_data=handle_data,before_trading_start = before_trading_start,
@@ -350,6 +385,16 @@ algor_obj = TradingAlgorithm(initialize=initialize, handle_data=handle_data,befo
                              get_pipeline_loader = choose_loader,
                              )
 
-perf_manual = algor_obj.run(data)
+result = algor_obj.run(data)
+print result
 
-print perf_manual
+# for index,values in  result.iterrows():
+#     print index
+#     for t in values['transactions']:
+#         print t
+#     print "++++++++++++++++++++++++++++++++++++++++++++"
+
+# for x in result.columns:
+#     print x
+
+print result.pnl
