@@ -86,7 +86,7 @@ class ILLIQ(CustomFactor):
 from sklearn.linear_model import LinearRegression
 from sklearn import linear_model, decomposition, ensemble, preprocessing, isotonic, metrics
 
-def BasicFactorRegress(inputs, window_length, mask, n_fwd_days, trigger_date=None):
+def BasicFactorRegress(inputs, window_length, mask, n_fwd_days, algo_mode=None):
     class BasicFactorRegress(CustomFactor):
         #params = {'trigger_date': None, }
         init = False
@@ -110,8 +110,8 @@ def BasicFactorRegress(inputs, window_length, mask, n_fwd_days, trigger_date=Non
             return np.vstack(last_values).T
         def compute(self, today, assets,out,returns,*inputs):
             #print "------------------------------- BasicFactorRegress:",today,trigger_date
-            if trigger_date != None and today != pd.Timestamp(trigger_date,tz='UTC'):  #仅仅是最重的预测factor给定时间执行了，其他的各依赖factor还是每次computer调用都执行，也流是每天都执行！ 不理想
-                return
+            #if trigger_date != None and today != pd.Timestamp(trigger_date,tz='UTC'):  #仅仅是最重的预测factor给定时间执行了，其他的各依赖factor还是每次computer调用都执行，也流是每天都执行！ 不理想
+            #    return
             #if trigger_date != None:
             #    today != np.datetime64(trigger_date)
             #    return None
@@ -122,7 +122,9 @@ def BasicFactorRegress(inputs, window_length, mask, n_fwd_days, trigger_date=Non
                 # Instantiate sklearn objects
                 # self.imputer = preprocessing.Imputer()
                 # self.scaler = preprocessing.MinMaxScaler()
-                self.clf = LinearRegression()
+                #self.clf = LinearRegression()
+                self.clf = algo_mode
+                print("algo_mode-----------------------------------------------------:",self.clf)
                 #print "debug factor regress inputs:",len(inputs),inputs
                 #print("input:",np.shape(inputs),inputs)
                 # print("returns:",np.shape(returns))
@@ -246,7 +248,9 @@ def make_pipeline(asset_finder):
         i +=1
 
 
-    predict = BasicFactorRegress(inputs=factors_pipe.values(), window_length=256, mask=private_universe,n_fwd_days = 5)
+    predict = BasicFactorRegress(inputs=factors_pipe.values(), window_length=256, mask=private_universe,
+                                 n_fwd_days = 5,
+                                 algo_mode=LinearRegression())
     predict_rank = predict.rank(mask=private_universe)
 
     longs = predict_rank.top(NUM_LONG_POSITIONS)
