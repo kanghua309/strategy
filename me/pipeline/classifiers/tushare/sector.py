@@ -127,7 +127,7 @@ def get_sector_by_onehot(sector_dict=None,mask = None,asset_finder = None):
     def _onehot_sectors(sector_keys):
         ##- Convert the Sectors column into binary labels
         sector_binarizer = preprocessing.LabelBinarizer()
-        strlbls = map(str,sector_keys)  # LabelBinarizer didn't like float values, so convert to strings
+        strlbls = list(map(str,sector_keys))  # LabelBinarizer didn't like float values, so convert to strings
         sector_binarizer.fit(strlbls)
         sector_labels_bin = sector_binarizer.transform(strlbls)  # this is now 12 binary columns from 1 categorical
         ##- Create a pandas dataFrame from the new binary labels
@@ -139,8 +139,9 @@ def get_sector_by_onehot(sector_dict=None,mask = None,asset_finder = None):
         return sLabels
 
     sector_indict,sector_rindict = get_sector_class() #TODO ORDERDICT????
-    sector_indict_keys = sector_indict.keys()
-    sector_indict_keys.sort()
+    #sector_indict_keys = sector_indict.keys()
+    #sector_indict_keys.sort()
+    sector_indict_keys = sorted(sector_indict)
     onehot_sector = _onehot_sectors(sector_indict_keys)
     #print sector_indict
     #print sector_inddict
