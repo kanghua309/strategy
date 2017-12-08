@@ -386,7 +386,7 @@ algor_obj = TradingAlgorithm(initialize=initialize, handle_data=handle_data,befo
                              )
 
 result = algor_obj.run(data)
-print result
+print(result)
 
 # for index,values in  result.iterrows():
 #     print index
@@ -397,4 +397,4 @@ print result
 # for x in result.columns:
 #     print x
 
-print result.pnl
+print (result.pnl)
