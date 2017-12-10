@@ -139,6 +139,8 @@ def BasicFactorRegress(inputs, window_length, mask, n_fwd_days, algo_mode=None, 
             #    today != np.datetime64(trigger_date)
             #    return None
             #print("TO -------------- Compute ----------------------")
+            
+            #print("%s:%s:%s" % (today,"-input",inputs))
             if (not self.init) :
             #if (not self.init) or (today.weekday == 0):  # Monday
                 # Instantiate sklearn objects
@@ -164,6 +166,8 @@ def BasicFactorRegress(inputs, window_length, mask, n_fwd_days, algo_mode=None, 
                 if cross == True: 
                    quadratic_featurizer  = PolynomialFeatures(interaction_only=True)
                    X = quadratic_featurizer.fit_transform(X)
+                #print("%s:%s" % ("-x",X))
+
                 self.clf.fit(X, Y)
                 #self.init = True
                 # Predict
@@ -177,6 +181,7 @@ def BasicFactorRegress(inputs, window_length, mask, n_fwd_days, algo_mode=None, 
             #print "debug factor regress last_factor_values:", np.shape(last_factor_values),last_factor_values
 
             #print self.clf.predict(last_factor_values)
+            #print("%s:%s" % ("-px",last_factor_values))
             out[:] = self.clf.predict(last_factor_values)
     return BasicFactorRegress(inputs=inputs,window_length=window_length,mask=mask)
 
@@ -184,7 +189,10 @@ def BasicFactorRegress(inputs, window_length, mask, n_fwd_days, algo_mode=None, 
 def make_pipeline(asset_finder,algo_mode):
 
     private_universe = private_universe_mask( hs300.tolist(),asset_finder=asset_finder)
+    #private_universe = private_universe_mask( ['000005'],asset_finder=asset_finder)
+    ###private_universe = private_universe_mask( ['000002','000005'],asset_finder=asset_finder)
     #private_universe = private_universe_mask( ['000001','000002','000005'],asset_finder=asset_finder)
+    #private_universe = private_universe_mask( ['000001'],asset_finder=asset_finder)
 
     #print private_universe_mask(['000001','000002','000005'],asset_finder=asset_finder)
     ######################################################################################################
@@ -260,10 +268,25 @@ def make_pipeline(asset_finder,algo_mode):
 
     factors_pipe['Returns'] = returns
     factors_pipe['Returns'].window_safe = True
-    for name, f in pipe_columns.items():
-        f.window_safe = True
-        factors_pipe[name] = f
-        #print (name,f)
+    idx = 0
+    
+    sort_keys = sorted(pipe_columns)
+    for key in sort_keys:
+        #print(key)
+        factors_pipe[key] = pipe_columns[key]
+        factors_pipe[key].window_safe = True
+        idx += 1
+        if idx == 100:
+           break
+
+
+    #for name, f in pipe_columns.items():
+    #    f.window_safe = True
+    #    factors_pipe[name] = f
+    #    print (name,f)
+    #    idx += 1
+    #    if idx == 1:
+    #       break
 
     i = 0
     for c in ONEHOTCLASS:
@@ -276,7 +299,7 @@ def make_pipeline(asset_finder,algo_mode):
     predict = BasicFactorRegress(inputs=factors_pipe.values(), window_length=252, mask=private_universe,
                                  n_fwd_days = 5,
                                  algo_mode=algo_mode,
-                                 cross = False)
+                                 cross = True)
     predict_rank = predict.rank(mask=private_universe)
 
     longs = predict_rank.top(NUM_LONG_POSITIONS)
@@ -390,6 +413,10 @@ def rebalance(context, data):
             order_target_percent(asset = asset,target = 1.0/(2*NUM_LONG_POSITIONS),style = MarketOrder())
             context.posset[asset] = True
     #print("rebalance over")
+    #if context.rbcnt == 0:
+    #	pipeline_data.to_csv(str(context.rbcnt) + "-rb.csv", encoding="utf-8")
+    context.rbcnt += 1
+  
 
 
 def initialize(context):
@@ -398,6 +425,7 @@ def initialize(context):
     attach_pipeline(make_pipeline(asset_finder=None,algo_mode=model), 'my_pipeline')
     schedule_function(rebalance, date_rules.week_start(days_offset=0), half_days=True)
     context.posset = {}
+    context.rbcnt = 0
     # record my portfolio variables at the end of day
 
 def handle_data(context, data):
@@ -424,6 +452,7 @@ for i in range(0,len(g_models)):
 
 
     result = algor_obj.run(data)
+    #result.to_csv("result.csv", encoding="utf-8")
     #print(result)
 
     # for index,values in  result.iterrows():
