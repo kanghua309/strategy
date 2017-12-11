@@ -11,5 +11,4 @@ class quantiles(CustomClassifier):
     missing_value = -1
     params = {'bins': None, }
     def compute(self, today, assets,out,factor,bins):
-        print assets
         out[:] = pd.qcut(factor,bins,labels=False)

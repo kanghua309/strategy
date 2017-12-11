@@ -88,14 +88,6 @@ def make_pipeline(asset_finder):
     ONEHOTCLASS,sector_indict_keys = get_sector_by_onehot(asset_finder=asset_finder,mask=private_universe)
 
 
-    # _Quantiles = market
-    #Quantiles = market.rank()
-    #Quantiles = returns.rank()
-    #Quantiles = returns.rank().quantiles(bins=3)
-    #Quantiles = returns.quantiles(bins=2,mask=returns.notnull())
-    #Quantiles = quantiles([returns],bins = 10,mask = private_universe)
-    # print(type(Quantiles))
-    # print("-----------------")
     pipe_columns = {
 
         'ep':ep.zscore(groupby=sector).downsample('month_start'),
@@ -127,8 +119,10 @@ def make_pipeline(asset_finder):
         'rsi22': rsi22.zscore(groupby=sector).downsample('week_start'),
 
         #######################################################################################################################
-        'ILLIQ5-2' : illiq5.zscore(groupby=quantiles([illiq5],bins = 10,mask = private_universe)).downsample('week_start'),
-        'ILLIQ22-2': illiq22.zscore(groupby=quantiles([illiq22],bins = 10,mask = private_universe)).downsample('week_start'),
+        # 'ILLIQ5-2' : illiq5.zscore(groupby=quantiles([illiq5],bins = 10,mask = private_universe)).downsample('week_start'),
+        # 'ILLIQ22-2': illiq22.zscore(groupby=quantiles([illiq22],bins = 10,mask = private_universe)).downsample('week_start'),
+        'ILLIQ5-2': illiq5.zscore(groupby=illiq5.quantiles(bins=10, mask=private_universe)).downsample('week_start'),
+        'ILLIQ22-2': illiq22.zscore(groupby=illiq22.quantiles(bins=10, mask=private_universe)).downsample('week_start'),
         #############################################################################################################################
         # 'rsiXX': rsi22.zscore(groupby=Quantiles).downsample('week_start'),
         # 'rank':Quantiles,
@@ -154,7 +148,7 @@ result = research.run_pipeline(my_pipe,
                                Date(tz='utc', as_timestamp=True).parser(start),
                                Date(tz='utc', as_timestamp=True).parser(end))
 
-print result.tail(100)
+print (result.tail(10))
 result = result.reset_index().drop(['level_0','level_1'],axis = 1).replace([np.inf,-np.inf],np.nan).fillna(0)
 
 X = result.drop('returns', 1)
@@ -236,23 +230,23 @@ for model in gmodels:
     print(model)
     print("Jarque-Bera p-value: ",pvalue_JB)
     if pvalue_JB > 0.05:
-        print "The relationship is normal distribution."
+        print ("The relationship is normal distribution.")
     if pvalue_JB < 0.05:
-        print "The relationship is not normal distribution."
+        print ("The relationship is not normal distribution.")
     # testing for homoskedasticity: breush pagan
     _with_constant = sm.add_constant(Test_X)
     _, pvalue_BP, _, _ = stats.diagnostic.het_breushpagan(resid,_with_constant)
     print ("Breush Pagan p-value: ",pvalue_BP)
     if pvalue_BP > 0.05:
-        print "The relationship is not heteroscedastic."
+        print ("The relationship is not heteroscedastic.")
     if pvalue_BP < 0.05:
-        print "The relationship is heteroscedastic."
+        print ("The relationship is heteroscedastic.")
     # testing for autocorrelation
     dw = stats.stattools.durbin_watson(resid)
     print ("Durbin Watson statistic: ", dw)
     if dw == 2:
-        print "The relationship is no autocorrelation ."
+        print ("The relationship is no autocorrelation .")
     if 0<= pvalue_BP < 2:
-        print "The relationship is positive autocorrelation ."
+        print ("The relationship is positive autocorrelation .")
     if 2 < pvalue_BP <= 4:
-        print "The relationship is negative autocorrelation ."
+        print ("The relationship is negative autocorrelation .")
