@@ -26,8 +26,8 @@ from me.pipeline.filters.universe import make_china_equity_universe, default_chi
     private_universe_mask
 from zipline.utils.cli import Date, Timestamp
 
-start = '2017-11-1'    # 必须在国内交易日
-end   = '2017-11-15'  # 必须在国内交易日
+start = '2017-1-1'
+end = '2017-11-30'
 
 c,_ = get_sector_class()
 ONEHOTCLASS = tuple(c)
