@@ -192,6 +192,8 @@ def get_sector_by_onehot(sector_dict=None,mask = None,asset_finder = None):
 
 
 
+
+
 import numpy as np
 class RandomUniverse(CustomClassifier):
     inputs = []

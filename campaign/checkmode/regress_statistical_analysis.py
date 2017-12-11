@@ -11,6 +11,7 @@ from zipline.pipeline.data import USEquityPricing
 from zipline.pipeline.factors import CustomFactor, Returns, Latest ,RSI
 from me.pipeline.factors.tsfactor import Fundamental
 from me.pipeline.classifiers.tushare.sector import get_sector,RandomUniverse,get_sector_class,get_sector_by_onehot
+from me.pipeline.classifiers.common import quantiles
 from zipline.pipeline.factors import CustomFactor
 from zipline.pipeline.classifiers import CustomClassifier,Latest
 from me.pipeline.factors.boost import Momentum
@@ -26,8 +27,8 @@ from me.pipeline.filters.universe import make_china_equity_universe, default_chi
     private_universe_mask
 from zipline.utils.cli import Date, Timestamp
 
-start = '2017-1-3'    # 必须在国内交易日
-end   = '2017-11-30'  # 必须在国内交易日
+start = '2017-11-1'    # 必须在国内交易日
+end   = '2017-11-15'  # 必须在国内交易日
 
 c,_ = get_sector_class()
 ONEHOTCLASS = tuple(c)
@@ -47,7 +48,7 @@ class ILLIQ(CustomFactor):
 def make_pipeline(asset_finder):
 
     private_universe = private_universe_mask( hs300.tolist(),asset_finder=asset_finder)
-    #print private_universe_mask(['000001','000002','000005'],asset_finder=asset_finder)
+    #private_universe =  private_universe_mask(['000001','000002','000005'],asset_finder=asset_finder)
     ######################################################################################################
     returns = Returns(inputs=[USEquityPricing.close], window_length=5, mask = private_universe)  # 预测一周数据
     ######################################################################################################
@@ -73,6 +74,8 @@ def make_pipeline(asset_finder):
 
     illiq22 = ILLIQ(window_length=22,mask = private_universe)
     illiq5 = ILLIQ(window_length=5,mask = private_universe)
+    illiq5.window_safe = True
+    illiq22.window_safe = True
 
     rsi5 = RSI(window_length=5,mask = private_universe)
     rsi22 = RSI(window_length=22,mask = private_universe)
@@ -84,6 +87,15 @@ def make_pipeline(asset_finder):
     sector = get_sector(asset_finder=asset_finder,mask=private_universe)
     ONEHOTCLASS,sector_indict_keys = get_sector_by_onehot(asset_finder=asset_finder,mask=private_universe)
 
+
+    # _Quantiles = market
+    #Quantiles = market.rank()
+    #Quantiles = returns.rank()
+    #Quantiles = returns.rank().quantiles(bins=3)
+    #Quantiles = returns.quantiles(bins=2,mask=returns.notnull())
+    #Quantiles = quantiles([returns],bins = 10,mask = private_universe)
+    # print(type(Quantiles))
+    # print("-----------------")
     pipe_columns = {
 
         'ep':ep.zscore(groupby=sector).downsample('month_start'),
@@ -105,20 +117,25 @@ def make_pipeline(asset_finder):
         'vol30':vol30.zscore(groupby=sector).downsample('week_start'),
         'rev30':rev30.zscore(groupby=sector).downsample('week_start'),
 
-        'ILLIQ5':illiq5.zscore(groupby=sector,mask=illiq5.percentile_between(1, 99)).downsample('week_start'),
-        'ILLIQ22':illiq22.zscore(groupby=sector, mask=illiq22.percentile_between(1, 99)).downsample('week_start'),
+        'ILLIQ5':illiq5.zscore(groupby=sector).downsample('week_start'),
+        'ILLIQ22':illiq22.zscore(groupby=sector).downsample('week_start'),
 
-        'mom5'  :mom5.zscore(groupby=sector,mask=mom5.percentile_between(1, 99)).downsample('week_start'),
-        'mom22': mom22.zscore(groupby=sector, mask=mom22.percentile_between(1, 99)).downsample('week_start'),
+        'mom5'  :mom5.zscore(groupby=sector).downsample('week_start'),
+        'mom22': mom22.zscore(groupby=sector).downsample('week_start'),
 
-        'rsi5'  :rsi5.zscore(groupby=sector,mask=rsi5.percentile_between(1, 99)).downsample('week_start'),
-        'rsi22': rsi22.zscore(groupby=sector, mask=rsi22.percentile_between(1, 99)).downsample('week_start'),
+        'rsi5'  :rsi5.zscore(groupby=sector).downsample('week_start'),
+        'rsi22': rsi22.zscore(groupby=sector).downsample('week_start'),
 
+        #######################################################################################################################
+        'ILLIQ5-2' : illiq5.zscore(groupby=quantiles([illiq5],bins = 10,mask = private_universe)).downsample('week_start'),
+        'ILLIQ22-2': illiq22.zscore(groupby=quantiles([illiq22],bins = 10,mask = private_universe)).downsample('week_start'),
+        #############################################################################################################################
+        # 'rsiXX': rsi22.zscore(groupby=Quantiles).downsample('week_start'),
+        # 'rank':Quantiles,
         #'sector':sector,
         #'returns':returns.quantiles(100),
         'returns': returns.downsample('week_start') * 100,
     }
-    # pipe_screen = (low_returns | high_returns)
     pipe = Pipeline(columns=pipe_columns,
            screen=private_universe,
            )
@@ -137,7 +154,7 @@ result = research.run_pipeline(my_pipe,
                                Date(tz='utc', as_timestamp=True).parser(start),
                                Date(tz='utc', as_timestamp=True).parser(end))
 
-
+print result.tail(100)
 result = result.reset_index().drop(['level_0','level_1'],axis = 1).replace([np.inf,-np.inf],np.nan).fillna(0)
 
 X = result.drop('returns', 1)
@@ -218,10 +235,24 @@ for model in gmodels:
     _, pvalue_JB, _, _ = stats.stattools.jarque_bera(resid)
     print(model)
     print("Jarque-Bera p-value: ",pvalue_JB)
+    if pvalue_JB > 0.05:
+        print "The relationship is normal distribution."
+    if pvalue_JB < 0.05:
+        print "The relationship is not normal distribution."
     # testing for homoskedasticity: breush pagan
     _with_constant = sm.add_constant(Test_X)
     _, pvalue_BP, _, _ = stats.diagnostic.het_breushpagan(resid,_with_constant)
     print ("Breush Pagan p-value: ",pvalue_BP)
+    if pvalue_BP > 0.05:
+        print "The relationship is not heteroscedastic."
+    if pvalue_BP < 0.05:
+        print "The relationship is heteroscedastic."
     # testing for autocorrelation
     dw = stats.stattools.durbin_watson(resid)
     print ("Durbin Watson statistic: ", dw)
+    if dw == 2:
+        print "The relationship is no autocorrelation ."
+    if 0<= pvalue_BP < 2:
+        print "The relationship is positive autocorrelation ."
+    if 2 < pvalue_BP <= 4:
+        print "The relationship is negative autocorrelation ."
