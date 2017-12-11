@@ -379,7 +379,7 @@ data = DataPortal(
 ################################## sim_params
 capital_base = DEFAULT_CAPITAL_BASE
 start = '2017-1-1'
-end   = '2017-9-29'
+end   = '2017-11-30'
 sim_params = create_simulation_parameters(
              capital_base= capital_base,
              start=Date(tz='utc', as_timestamp=True).parser(start),

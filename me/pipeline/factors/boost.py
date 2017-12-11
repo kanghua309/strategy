@@ -88,7 +88,7 @@ class Momentum(CustomFactor):
     def compute(self, today, assets, out, close):
         #print "Momentum:",today, assets
         window_length = len(close)
-        lookback = window_length / 10
+        lookback = window_length // 10
         out[:] = ((close[-lookback] - close[-window_length]) / close[-window_length] -
                   (close[-1] - close[-lookback]) / close[-lookback])
 
