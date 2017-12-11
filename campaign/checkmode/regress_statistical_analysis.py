@@ -216,11 +216,12 @@ for model in gmodels:
     resid = model.predict(Test_X) - Test_Y
     # testing for normality: jarque-bera
     _, pvalue_JB, _, _ = stats.stattools.jarque_bera(resid)
-    print("Jarque-Bera p-value: ",model,pvalue_JB)
+    print(model)
+    print("Jarque-Bera p-value: ",pvalue_JB)
     # testing for homoskedasticity: breush pagan
     _with_constant = sm.add_constant(Test_X)
     _, pvalue_BP, _, _ = stats.diagnostic.het_breushpagan(resid,_with_constant)
-    print "Breush Pagan p-value: ",model,pvalue_BP
+    print ("Breush Pagan p-value: ",pvalue_BP)
     # testing for autocorrelation
     dw = stats.stattools.durbin_watson(resid)
-    print "Durbin Watson statistic: ", model,dw
+    print ("Durbin Watson statistic: ", dw)
