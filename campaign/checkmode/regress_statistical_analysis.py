@@ -26,15 +26,13 @@ from me.pipeline.filters.universe import make_china_equity_universe, default_chi
     private_universe_mask
 from zipline.utils.cli import Date, Timestamp
 
-start = '2016-8-10'   # 必须在国内交易日
-end   = '2017-9-11'  # 必须在国内交易日
+start = '2017-1-3'    # 必须在国内交易日
+end   = '2017-11-30'  # 必须在国内交易日
 
 c,_ = get_sector_class()
 ONEHOTCLASS = tuple(c)
 
 hs300 = ts.get_hs300s()['code']
-#print type(hs300),hs300
-#print hs300.tolist()
 
 
 class ILLIQ(CustomFactor):
@@ -53,7 +51,7 @@ def make_pipeline(asset_finder):
     ######################################################################################################
     returns = Returns(inputs=[USEquityPricing.close], window_length=5, mask = private_universe)  # 预测一周数据
     ######################################################################################################
-    ep = 1/Fundamental(mask = private_universe,asset_finder=asset_finder).pe.latest
+    ep = 1/Fundamental(mask = private_universe,asset_finder=asset_finder).pe
     bp = 1/Fundamental(mask = private_universe,asset_finder=asset_finder).pb
     bvps = Fundamental(mask = private_universe,asset_finder=asset_finder).bvps
     market = Fundamental(mask = private_universe,asset_finder=asset_finder).outstanding
@@ -139,49 +137,24 @@ result = research.run_pipeline(my_pipe,
                                Date(tz='utc', as_timestamp=True).parser(start),
                                Date(tz='utc', as_timestamp=True).parser(end))
 
-print result.head(10)
-#print type(result)
-#print result.reset_index()
-#result.replace([np.inf,-np.inf],np.nan)
+
 result = result.reset_index().drop(['level_0','level_1'],axis = 1).replace([np.inf,-np.inf],np.nan).fillna(0)
-print "#####################################"
-print result.head(10)
-# print result.isnull().any()
-# print result[result.isnull().values==True]
-
-
-from sklearn.preprocessing import PolynomialFeatures
-print type(result.values),result.values
-print "============================="
-# print np.isfinite(result.values.all())
-# all_inf_or_nan = result.isin([np.inf,-np.inf,np.nan]).all(axis = 'columns')
-# x = result[~all_inf_or_nan]
-# # from sklearn.preprocessing import Imputer
-# imp = Imputer(missing_values='NaN', strategy='mean', axis=0)
-# imp.fit(X)
-#
-# quadratic_featurizer  = PolynomialFeatures(interaction_only=True)
-# X_train_quadratic = quadratic_featurizer.fit_transform(result)
-# print X_train_quadratic
-# print np.shape(X_train_quadratic),type(X_train_quadratic)
-#
-# print quadratic_featurizer.get_feature_names(result.columns),len(quadratic_featurizer.get_feature_names(result.columns))
-
-
-
-
 
 X = result.drop('returns', 1)
 Y = result['returns']
 
-print ("total data size :",len(result))
-test_size=2000
+print ("Total data size :",len(result))
+test_size= 2000
 Train_X = X[:-test_size].values
 Train_Y = Y[:-test_size].values
 Test_X  = X[-test_size:].values
 Test_Y  = Y[-test_size:].values
 
-print ("*******************************************")
+print ("****************************************************************************Cross Valid*************************************************************************************************")
+#quadratic_featurizer  = PolynomialFeatures(interaction_only=True)
+#Train_X = quadratic_featurizer.fit_transform(Train_X)
+#Test_X = quadratic_featurizer.fit_transform(Test_X)
+
 # print Test_Y.head(10),len(Test_Y)
 # print Test_X.head(10),len(Test_X)
 # #
@@ -210,15 +183,44 @@ print ("*******************************************")
 #print np.shape(X_train_quadratic),type(X_train_quadratic)
 # print quadratic_featurizer.get_feature_names(result.columns),len(quadratic_featurizer.get_feature_names(result.columns))
 
+from sklearn.linear_model import LinearRegression
+from sklearn.linear_model import Ridge
+from sklearn.linear_model import Lasso
+from sklearn.linear_model import ElasticNet
+from sklearn.neighbors import KNeighborsRegressor
+from sklearn.tree import DecisionTreeRegressor
+from sklearn.svm import SVR
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.ensemble import AdaBoostRegressor
+from sklearn.ensemble import GradientBoostingRegressor
+gmodels = [LinearRegression(), Ridge(), Lasso(), ElasticNet(), KNeighborsRegressor(), DecisionTreeRegressor(), SVR(), RandomForestRegressor(),
+          AdaBoostRegressor(), GradientBoostingRegressor()]
 
-from modeltest import model_cross_valid,model_fit_and_test
-model_cross_valid(Train_X[0:],Train_Y)
-print ("---------------fit and test-------------")
-model_fit_and_test(Train_X[0:],Train_Y,Test_X[0:],Test_Y)
+# seed = 7
+# kfold = model_selection.KFold(n_splits=10, random_state=seed)
+# for model in gmodels:
+#     results = model_selection.cross_val_score(model, Train_X, Train_Y, cv=kfold, scoring='neg_mean_squared_error')
+#     print(model,results.mean())
 
 
+print ("****************************************************************************Residual Analysis*************************************************************************************************")
+import itertools
+from statsmodels import stats
+#import statsmodels.api as sms
+#from statsmodels import api as sms
+import statsmodels.api as sm
+import scipy
 
-
-
-#print type(result.as_matrix()),result.as_matrix
-print ("-------------------------------------------------------------------------")
+for model in gmodels:
+    model.fit(Test_X, Test_Y)
+    resid = model.predict(Test_X) - Test_Y
+    # testing for normality: jarque-bera
+    _, pvalue_JB, _, _ = stats.stattools.jarque_bera(resid)
+    print("Jarque-Bera p-value: ",model,pvalue_JB)
+    # testing for homoskedasticity: breush pagan
+    _with_constant = sm.add_constant(Test_X)
+    _, pvalue_BP, _, _ = stats.diagnostic.het_breushpagan(resid,_with_constant)
+    print "Breush Pagan p-value: ",model,pvalue_BP
+    # testing for autocorrelation
+    dw = stats.stattools.durbin_watson(resid)
+    print "Durbin Watson statistic: ", model,dw
