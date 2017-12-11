@@ -11,7 +11,6 @@ from zipline.pipeline.data import USEquityPricing
 from zipline.pipeline.factors import CustomFactor, Returns, Latest ,RSI
 from me.pipeline.factors.tsfactor import Fundamental
 from me.pipeline.classifiers.tushare.sector import get_sector,RandomUniverse,get_sector_class,get_sector_by_onehot
-from me.pipeline.classifiers.common import quantiles
 from zipline.pipeline.factors import CustomFactor
 from zipline.pipeline.classifiers import CustomClassifier,Latest
 from me.pipeline.factors.boost import Momentum
@@ -74,8 +73,6 @@ def make_pipeline(asset_finder):
 
     illiq22 = ILLIQ(window_length=22,mask = private_universe)
     illiq5 = ILLIQ(window_length=5,mask = private_universe)
-    illiq5.window_safe = True
-    illiq22.window_safe = True
 
     rsi5 = RSI(window_length=5,mask = private_universe)
     rsi22 = RSI(window_length=22,mask = private_universe)
@@ -86,7 +83,6 @@ def make_pipeline(asset_finder):
 
     sector = get_sector(asset_finder=asset_finder,mask=private_universe)
     ONEHOTCLASS,sector_indict_keys = get_sector_by_onehot(asset_finder=asset_finder,mask=private_universe)
-
 
     pipe_columns = {
 
@@ -117,6 +113,7 @@ def make_pipeline(asset_finder):
 
         'rsi5'  :rsi5.zscore(groupby=sector).downsample('week_start'),
         'rsi22': rsi22.zscore(groupby=sector).downsample('week_start'),
+        #'rsi22': rsi22.zscore(groupby=sector, mask=rsi22.percentile_between(1, 99)),
 
         #######################################################################################################################
         # 'ILLIQ5-2' : illiq5.zscore(groupby=quantiles([illiq5],bins = 10,mask = private_universe)).downsample('week_start'),
@@ -124,10 +121,6 @@ def make_pipeline(asset_finder):
         'ILLIQ5-2': illiq5.zscore(groupby=illiq5.quantiles(bins=10, mask=private_universe)).downsample('week_start'),
         'ILLIQ22-2': illiq22.zscore(groupby=illiq22.quantiles(bins=10, mask=private_universe)).downsample('week_start'),
         #############################################################################################################################
-        # 'rsiXX': rsi22.zscore(groupby=Quantiles).downsample('week_start'),
-        # 'rank':Quantiles,
-        #'sector':sector,
-        #'returns':returns.quantiles(100),
         'returns': returns.downsample('week_start') * 100,
     }
     pipe = Pipeline(columns=pipe_columns,
