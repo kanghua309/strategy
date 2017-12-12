@@ -7,12 +7,9 @@ Created on Wed May 17 13:42:21 2017
 import numpy as np
 import pandas as pd
 
-from zipline.pipeline.data import USEquityPricing
 from zipline.pipeline.factors import CustomFactor, Returns, Latest ,RSI
-from me.pipeline.factors.tsfactor import Fundamental
 from me.pipeline.classifiers.tushare.sector import get_sector,RandomUniverse,get_sector_class,get_sector_by_onehot
 from zipline.pipeline.factors import CustomFactor
-from zipline.pipeline.classifiers import CustomClassifier,Latest
 from me.pipeline.factors.boost import Momentum
 import tushare as ts
 

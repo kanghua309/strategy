@@ -43,12 +43,9 @@ from zipline.data.bundles.viadb import viadb
 import numpy as np
 import pandas as pd
 
-from zipline.pipeline.data import USEquityPricing
 from zipline.pipeline.factors import CustomFactor, Returns, Latest, RSI
-from me.pipeline.factors.tsfactor import Fundamental
 from me.pipeline.classifiers.tushare.sector import get_sector, RandomUniverse, get_sector_class, get_sector_by_onehot
 from zipline.pipeline.factors import CustomFactor
-from zipline.pipeline.classifiers import CustomClassifier, Latest
 from me.pipeline.factors.boost import Momentum
 import tushare as ts
 
@@ -56,13 +53,11 @@ from zipline.pipeline import Pipeline
 from zipline.pipeline.data import USEquityPricing
 from zipline.pipeline.factors import Returns, AverageDollarVolume
 
-from me.helper.research_env import Research
 from me.pipeline.factors.tsfactor import Fundamental
 from me.pipeline.filters.universe import make_china_equity_universe, default_china_equity_universe_mask, \
     private_universe_mask
 from zipline.utils.cli import Date, Timestamp
 
-from sklearn import model_selection
 from sklearn.linear_model import LinearRegression
 from sklearn.linear_model import Ridge
 from sklearn.linear_model import Lasso
@@ -79,8 +74,8 @@ np.random.seed(1335)  # for reproducibility
 
 g_models = [LinearRegression(), Ridge(), Lasso(), ElasticNet(), KNeighborsRegressor(), DecisionTreeRegressor(), SVR(),
             RandomForestRegressor(), AdaBoostRegressor(), GradientBoostingRegressor()]
-# g_models = [LinearRegression(), LinearRegression(),LinearRegression(),LinearRegression()]
 g_idx = 0
+
 
 NUM_LONG_POSITIONS = 20
 NUM_SHORT_POSITIONS = 20
@@ -323,7 +318,7 @@ data = DataPortal(
 ################################## sim_params
 capital_base = DEFAULT_CAPITAL_BASE
 start = '2017-1-1'
-end = '2017-11-30'
+end   = '2017-11-30'
 sim_params = create_simulation_parameters(
     capital_base=capital_base,
     start=Date(tz='utc', as_timestamp=True).parser(start),
@@ -414,7 +409,6 @@ for i in range(0, len(g_models)):
     # import matplotlib
     # matplotlib.use('agg')
     # import pyfolio as pf
-    # import Tkinter
     # returns, positions, transactions = pf.utils.extract_rets_pos_txn_from_zipline(result)
     # print(returns)
     # print(returns.cumsum())
