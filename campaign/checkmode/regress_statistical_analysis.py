@@ -43,8 +43,8 @@ class ILLIQ(CustomFactor):
 
 def make_pipeline(asset_finder):
 
-    private_universe = private_universe_mask( hs300.tolist(),asset_finder=asset_finder)
-    #private_universe =  private_universe_mask(['000001','000002','000005'],asset_finder=asset_finder)
+    #private_universe = private_universe_mask( hs300.tolist(),asset_finder=asset_finder)
+    private_universe =  private_universe_mask(['000001','000002','000005'],asset_finder=asset_finder)
     ######################################################################################################
     returns = Returns(inputs=[USEquityPricing.close], window_length=5, mask = private_universe)  # 预测一周数据
     ######################################################################################################
@@ -108,7 +108,7 @@ def make_pipeline(asset_finder):
         'mom5'  :mom5.zscore(groupby=sector).downsample('week_start'),
         'mom22': mom22.zscore(groupby=sector).downsample('week_start'),
 
-        'rsi5'  :rsi5.zscore(groupby=sector).downsample('week_start'),
+        'rsi5' : rsi5.zscore(groupby=sector).downsample('week_start'),
         'rsi22': rsi22.zscore(groupby=sector).downsample('week_start'),
         #'rsi22': rsi22.zscore(groupby=sector, mask=rsi22.percentile_between(1, 99)),
 
