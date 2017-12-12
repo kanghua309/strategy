@@ -115,7 +115,7 @@ def get_sector(sector_dict=None,mask = None,asset_finder = None):
             out[:] = rs
     if mask != None:
         return Sector(mask=mask)
-    return Sector()
+    return Sector(mask=mask)
 
 def get_sector_by_onehot(sector_dict=None,mask = None,asset_finder = None):
     if sector_dict is None:
