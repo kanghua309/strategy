@@ -26,7 +26,7 @@ from me.pipeline.filters.universe import make_china_equity_universe, default_chi
     private_universe_mask
 from zipline.utils.cli import Date, Timestamp
 
-start = '2017-1-1'
+start = '2017-1-3'
 end = '2017-11-30'
 
 c,_ = get_sector_class()
@@ -118,10 +118,10 @@ def make_pipeline(asset_finder):
         #######################################################################################################################
         # 'ILLIQ5-2' : illiq5.zscore(groupby=quantiles([illiq5],bins = 10,mask = private_universe)).downsample('week_start'),
         # 'ILLIQ22-2': illiq22.zscore(groupby=quantiles([illiq22],bins = 10,mask = private_universe)).downsample('week_start'),
-        'ILLIQ5-2': illiq5.zscore(groupby=illiq5.quantiles(bins=10, mask=private_universe)).downsample('week_start'),
-        'ILLIQ22-2': illiq22.zscore(groupby=illiq22.quantiles(bins=10, mask=private_universe)).downsample('week_start'),
+        # 'ILLIQ5-2': illiq5.zscore(groupby=illiq5.quantiles(bins=10, mask=private_universe)).downsample('week_start'),
+        # 'ILLIQ22-2': illiq22.zscore(groupby=illiq22.quantiles(bins=10, mask=private_universe)).downsample('week_start'),
         #############################################################################################################################
-        'returns': returns.downsample('week_start') * 100,
+        'returns': returns.downsample('week_start'),
     }
     pipe = Pipeline(columns=pipe_columns,
            screen=private_universe,
@@ -186,7 +186,7 @@ print ("************************************************************************
 #print X_train_quadratic
 #print np.shape(X_train_quadratic),type(X_train_quadratic)
 # print quadratic_featurizer.get_feature_names(result.columns),len(quadratic_featurizer.get_feature_names(result.columns))
-
+from sklearn import model_selection
 from sklearn.linear_model import LinearRegression
 from sklearn.linear_model import Ridge
 from sklearn.linear_model import Lasso
@@ -203,7 +203,8 @@ gmodels = [LinearRegression(), Ridge(), Lasso(), ElasticNet(), KNeighborsRegress
 # seed = 7
 # kfold = model_selection.KFold(n_splits=10, random_state=seed)
 # for model in gmodels:
-#     results = model_selection.cross_val_score(model, Train_X, Train_Y, cv=kfold, scoring='neg_mean_squared_error')
+#     results = model_selection.cross_val_score(model, X, Y
+#                                               , cv=kfold, scoring='neg_mean_squared_error')
 #     print(model,results.mean())
 
 
@@ -219,9 +220,9 @@ for model in gmodels:
     model.fit(Test_X, Test_Y)
     resid = model.predict(Test_X) - Test_Y
     # testing for normality: jarque-bera
-    _, pvalue_JB, _, _ = stats.stattools.jarque_bera(resid)
+    _, pvalue_JB, skew, kurtosis = stats.stattools.jarque_bera(resid)
     print(model)
-    print("Jarque-Bera p-value: ",pvalue_JB)
+    print("Jarque-Bera p-value: %f , kurtosis :%f ,skew :%f" % (pvalue_JB,kurtosis,skew))
     if pvalue_JB > 0.05:
         print ("The relationship is normal distribution.")
     if pvalue_JB < 0.05:
@@ -229,14 +230,14 @@ for model in gmodels:
     # testing for homoskedasticity: breush pagan
     _with_constant = sm.add_constant(Test_X)
     _, pvalue_BP, _, _ = stats.diagnostic.het_breushpagan(resid,_with_constant)
-    print ("Breush Pagan p-value: ",pvalue_BP)
+    print ("Breush Pagan p-value: %f" % pvalue_BP)
     if pvalue_BP > 0.05:
         print ("The relationship is not heteroscedastic.")
     if pvalue_BP < 0.05:
         print ("The relationship is heteroscedastic.")
     # testing for autocorrelation
     dw = stats.stattools.durbin_watson(resid)
-    print ("Durbin Watson statistic: ", dw)
+    print ("Durbin Watson statistic: %f" % dw)
     if dw == 2:
         print ("The relationship is no autocorrelation .")
     if 0<= pvalue_BP < 2:
