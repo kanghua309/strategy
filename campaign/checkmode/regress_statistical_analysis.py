@@ -43,8 +43,8 @@ class ILLIQ(CustomFactor):
 
 def make_pipeline(asset_finder):
 
-    #private_universe = private_universe_mask( hs300.tolist(),asset_finder=asset_finder)
-    private_universe =  private_universe_mask(['000001','000002','000005'],asset_finder=asset_finder)
+    private_universe = private_universe_mask( hs300.tolist(),asset_finder=asset_finder)
+    #private_universe =  private_universe_mask(['000001','000002','000005'],asset_finder=asset_finder)
     ######################################################################################################
     returns = Returns(inputs=[USEquityPricing.close], window_length=5, mask = private_universe)  # 预测一周数据
     ######################################################################################################
