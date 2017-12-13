@@ -115,8 +115,8 @@ def make_pipeline(asset_finder):
         #######################################################################################################################
         # 'ILLIQ5-2' : illiq5.zscore(groupby=quantiles([illiq5],bins = 10,mask = private_universe)).downsample('week_start'),
         # 'ILLIQ22-2': illiq22.zscore(groupby=quantiles([illiq22],bins = 10,mask = private_universe)).downsample('week_start'),
-        # 'ILLIQ5-2': illiq5.zscore(groupby=illiq5.quantiles(bins=10, mask=private_universe)).downsample('week_start'),
-        # 'ILLIQ22-2': illiq22.zscore(groupby=illiq22.quantiles(bins=10, mask=private_universe)).downsample('week_start'),
+        # 'ILLIQ5-2': illiq5.zscore(groupby=market.quantiles(bins=10, mask=private_universe)).downsample('week_start'),
+        # 'ILLIQ22-2': illiq22.zscore(groupby=market.quantiles(bins=10, mask=private_universe)).downsample('week_start'),
         #############################################################################################################################
         'returns': returns.downsample('week_start'),
     }
@@ -197,12 +197,18 @@ from sklearn.ensemble import GradientBoostingRegressor
 gmodels = [LinearRegression(), Ridge(), Lasso(), ElasticNet(), KNeighborsRegressor(), DecisionTreeRegressor(), SVR(), RandomForestRegressor(),
           AdaBoostRegressor(), GradientBoostingRegressor()]
 
-# seed = 7
-# kfold = model_selection.KFold(n_splits=10, random_state=seed)
-# for model in gmodels:
-#     results = model_selection.cross_val_score(model, X, Y
-#                                               , cv=kfold, scoring='neg_mean_squared_error')
-#     print(model,results.mean())
+seed = 7
+kfold = model_selection.KFold(n_splits=10, random_state=seed)
+for model in gmodels:
+    results = model_selection.cross_val_score(model, X, Y
+                                              , cv=kfold, scoring='neg_mean_squared_error')
+    print(model,results.mean())
+    # predicted = model_selection.cross_val_predict(model, X, Y
+    #                                           , cv=kfold)
+    # print(predicted)
+    # from sklearn import metrics
+    # metrics.accuracy_score(Y, predicted)
+
 
 
 print ("****************************************************************************Residual Analysis*************************************************************************************************")
