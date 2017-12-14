@@ -84,7 +84,6 @@ NUM_SHORT_POSITIONS = 20
 c, _ = get_sector_class()
 ONEHOTCLASS = tuple(c)
 
-hs300 = ts.get_hs300s()['code']
 
 
 class ILLIQ(CustomFactor):
@@ -146,6 +145,7 @@ def BasicFactorRegress(inputs, window_length, mask, n_fwd_days, algo_mode=None, 
 
 
 def make_pipeline(asset_finder, algo_mode):
+    hs300 = ts.get_hs300s()['code']
     private_universe = private_universe_mask(hs300.tolist(), asset_finder=asset_finder)
     # private_universe = private_universe_mask( ['000001','000002','000005'],asset_finder=asset_finder)
     ######################################################################################################

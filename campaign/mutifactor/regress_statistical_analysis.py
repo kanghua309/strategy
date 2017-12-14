@@ -29,7 +29,6 @@ end = '2017-11-30'
 c,_ = get_sector_class()
 ONEHOTCLASS = tuple(c)
 
-hs300 = ts.get_hs300s()['code']
 
 
 class ILLIQ(CustomFactor):
@@ -42,7 +41,7 @@ class ILLIQ(CustomFactor):
         out[:] =(_rets/_vols).mean().values
 
 def make_pipeline(asset_finder):
-
+    hs300 = ts.get_hs300s()['code']
     private_universe = private_universe_mask( hs300.tolist(),asset_finder=asset_finder)
     #private_universe =  private_universe_mask(['000001','000002','000005'],asset_finder=asset_finder)
     ######################################################################################################
@@ -185,16 +184,16 @@ print ("************************************************************************
 # print quadratic_featurizer.get_feature_names(result.columns),len(quadratic_featurizer.get_feature_names(result.columns))
 from sklearn import model_selection
 from sklearn.linear_model import LinearRegression
-from sklearn.linear_model import Ridge
-from sklearn.linear_model import Lasso
-from sklearn.linear_model import ElasticNet
+from sklearn.linear_model import Ridge,RidgeCV
+from sklearn.linear_model import Lasso,LassoCV
+from sklearn.linear_model import ElasticNet,ElasticNetCV
 from sklearn.neighbors import KNeighborsRegressor
 from sklearn.tree import DecisionTreeRegressor
 from sklearn.svm import SVR
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.ensemble import AdaBoostRegressor
 from sklearn.ensemble import GradientBoostingRegressor
-gmodels = [LinearRegression(), Ridge(), Lasso(), ElasticNet(), KNeighborsRegressor(), DecisionTreeRegressor(), SVR(), RandomForestRegressor(),
+gmodels = [LinearRegression(), Ridge(),RidgeCV(),Lasso(),LassoCV(),ElasticNet(),ElasticNetCV(), KNeighborsRegressor(), DecisionTreeRegressor(), SVR(), RandomForestRegressor(),
           AdaBoostRegressor(), GradientBoostingRegressor()]
 
 seed = 7
