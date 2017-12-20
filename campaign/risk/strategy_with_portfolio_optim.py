@@ -102,17 +102,15 @@ def Markowitz(inputs, mask ):
             # cov_mat = np.cov(returns)
             # Sigma = cov_mat
 
-            n = 3000
-            m = 50
 
-            Sigma = returns
+            Sigma = returns  #TODO>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
             Sigma = Sigma.T.dot(Sigma)
             D = np.diag(np.random.uniform(0, 0.9, size=len(assets)))
             F = factors
 
             ########################################################
-            f = F.T * w
             w = cvx.Variable(len(assets))
+            f = F.T * w
             #risk = cvx.quad_form(w, Sigma)
             risk = cvx.quad_form(f, Sigma) + cvx.quad_form(w, D)
             mu = np.array([self.target_ret] * len(assets))
