@@ -103,7 +103,7 @@ def Markowitz(inputs, mask ):
             # Sigma = cov_mat
 
 
-            Sigma = returns  #TODO>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+            Sigma = factors  #TODO>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
             Sigma = Sigma.T.dot(Sigma)
             D = np.diag(np.random.uniform(0, 0.9, size=len(assets)))
             F = factors
