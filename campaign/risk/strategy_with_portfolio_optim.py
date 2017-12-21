@@ -91,7 +91,7 @@ def Markowitz(inputs, mask ):
         window_length = int(1)
         target_ret = 0.01  # TODO
         max_sector_exposure = 0.1
-        def compute(self, today, assets,out,returns,factors):
+        def compute(self, today, assets,out,returns,*factors):
             #print "------------------------------- Markowitz:",today
             print ("Markowitz factor:",today)
             gamma = cvx.Parameter(sign="positive")
@@ -102,11 +102,12 @@ def Markowitz(inputs, mask ):
             # cov_mat = np.cov(returns)
             # Sigma = cov_mat
 
-
-            Sigma = factors  #TODO>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+            _factors = np.nan_to_num(np.squeeze(np.dstack(factors)))
+            print("factors shapes",np.shape(_factors))
+            Sigma = _factors  #TODO>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
             Sigma = Sigma.T.dot(Sigma)
             D = np.diag(np.random.uniform(0, 0.9, size=len(assets)))
-            F = factors
+            F = _factors
 
             ########################################################
             w = cvx.Variable(len(assets))
@@ -203,9 +204,9 @@ class ILLIQ(CustomFactor):
 
 
 def make_pipeline(asset_finder, algo_mode):
-    hs300 = ts.get_hs300s()['code']
-    private_universe = private_universe_mask(hs300.tolist(), asset_finder=asset_finder)
-    # private_universe = private_universe_mask( ['000001','000002','000005'],asset_finder=asset_finder)
+    #hs300 = ts.get_hs300s()['code']
+    #private_universe = private_universe_mask(hs300.tolist(), asset_finder=asset_finder)
+    private_universe = private_universe_mask( ['000001','000002','000005'],asset_finder=asset_finder)
     ######################################################################################################
     returns = Returns(inputs=[USEquityPricing.close], window_length=5, mask=private_universe)  # 预测一周数据
     ######################################################################################################
@@ -301,7 +302,7 @@ def make_pipeline(asset_finder, algo_mode):
     shorts = predict_rank.bottom(NUM_SHORT_POSITIONS)
     long_short_screen = (longs | shorts)
 
-    weights = Markowitz(inputs=factors_pipe.values(),screen=long_short_screen)
+    weights = Markowitz(inputs=factors_pipe.values(),mask=long_short_screen)
     # TODO sector onehot
     pipe_final_columns = {
         'Predict Factor': predict.downsample('week_start'),
@@ -392,7 +393,7 @@ sim_params = create_simulation_parameters(
 #######################################################################
 def rebalance(context, data):
     # print ("rebalance:",get_datetime())
-    # print context.pipeline_data
+    print context.pipeline_data
     pipeline_data = context.pipeline_data
     keys = list(context.posset)
     for asset in keys:
@@ -401,18 +402,20 @@ def rebalance(context, data):
             order_target_percent(asset=asset, target=0.0, style=MarketOrder())
             del context.posset[asset]
 
-    for asset, value in pipeline_data[pipeline_data['shorts'] == True].iterrows():
-        if data.can_trade(asset):
-            # print("short:", asset,- 1.0/NUM_SHORT_POSITIONS)
-            order_target_percent(asset=asset, target=-1.0 / (2 * NUM_SHORT_POSITIONS), style=MarketOrder())
-            context.posset[asset] = False
 
-    for asset, value in pipeline_data[pipeline_data['longs'] == True].iterrows():
-        # print type(label),value
-        if data.can_trade(asset):
-            # print("long:", asset,1.0/NUM_LONG_POSITIONS)
-            order_target_percent(asset=asset, target=1.0 / (2 * NUM_LONG_POSITIONS), style=MarketOrder())
-            context.posset[asset] = True
+    # for asset, value in pipeline_data[pipeline_data['shorts'] == True].iterrows():
+    #     if data.can_trade(asset):
+    #         # print("short:", asset,- 1.0/NUM_SHORT_POSITIONS)
+
+    #         order_target_percent(asset=asset, target=-1.0 / (2 * NUM_SHORT_POSITIONS), style=MarketOrder())
+    #         context.posset[asset] = False
+    #
+    # for asset, value in pipeline_data[pipeline_data['longs'] == True].iterrows():
+    #     # print type(label),value
+    #     if data.can_trade(asset):
+    #         # print("long:", asset,1.0/NUM_LONG_POSITIONS)
+    #         order_target_percent(asset=asset, target=1.0 / (2 * NUM_LONG_POSITIONS), style=MarketOrder())
+    #         context.posset[asset] = True
     # print("rebalance over")
     # if context.rbcnt == 0:
     #	pipeline_data.to_csv(str(context.rbcnt) + "-rb.csv", encoding="utf-8")
@@ -420,8 +423,8 @@ def rebalance(context, data):
 
 
 def initialize(context):
-    model =  SVR()
-    print("hello world --- :", g_idx, model)
+    model =  LinearRegression()
+    #print("hello world --- :", g_idx, model)
     attach_pipeline(make_pipeline(asset_finder=None, algo_mode=model), 'my_pipeline')
     schedule_function(rebalance, date_rules.week_start(days_offset=0), half_days=True)
     context.posset = {}
