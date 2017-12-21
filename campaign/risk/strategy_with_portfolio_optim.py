@@ -171,13 +171,17 @@ def BasicFactorRegress(inputs, window_length, mask, n_fwd_days, algo_mode=None, 
             return np.vstack(last_values).T
 
         def compute(self, today, assets, out, returns, *inputs):
+            print ("------------------------------- BasicFactorRegress:",today)
             if (not self.init):
                 self.clf = algo_mode
                 X = np.dstack(inputs)  # (time, stocks, factors)  按时间组织了
+                print("::::1",np.shape(X))
+
                 Y = returns  # (time, stocks)
                 X, Y = self.__shift_mask_data(X, Y, n_fwd_days)  # n天的数值被展开成1维的了- 每个factor 按天展开
                 X = np.nan_to_num(X)
                 Y = np.nan_to_num(Y)
+                print("::::2",np.shape(X))
                 if cross == True:
                     quadratic_featurizer = PolynomialFeatures(interaction_only=True)
                     X = quadratic_featurizer.fit_transform(X)
@@ -302,14 +306,14 @@ def make_pipeline(asset_finder, algo_mode):
     shorts = predict_rank.bottom(NUM_SHORT_POSITIONS)
     long_short_screen = (longs | shorts)
 
-    weights = Markowitz(inputs=factors_pipe.values(),mask=long_short_screen)
+    #weights = Markowitz(inputs=factors_pipe.values(),mask=long_short_screen)
     # TODO sector onehot
     pipe_final_columns = {
         'Predict Factor': predict.downsample('week_start'),
         'longs': longs.downsample('week_start'),
         'shorts': shorts.downsample('week_start'),
         'predict_rank': predict_rank.downsample('week_start'),
-        'weights': weights.downsample('week_start')
+        #'weights': weights.downsample('week_start')
     }
     pipe = Pipeline(columns=pipe_final_columns,
                     screen=long_short_screen, )
