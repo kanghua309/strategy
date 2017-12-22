@@ -92,18 +92,18 @@ def Markowitz(inputs, mask ):
         target_ret = 0.01  # TODO
         max_sector_exposure = 0.1
         def compute(self, today, assets,out,returns,*factors):
-            print("------------------------------- Markowitz:",today)
-            print ("Markowitz factor:",today)
+            #print("------------------------------- Markowitz:",today)
+            #print ("Markowitz factor:",today)
             gamma = cvx.Parameter(sign="positive")
             gamma.value = 1  # gamma is a Parameter that trades off risk and return.
             returns = np.nan_to_num(returns.T)  # time,stock to stock,time
             # [[1 3 2] [3 2 1]] = > [[1 3] [3 2] [2 1]]
-            print ("Markowitz return ...\n",  returns)
+            #print ("Markowitz return ...\n",  returns)
             # cov_mat = np.cov(returns)
             # Sigma = cov_mat
 
             _factors = np.nan_to_num(np.squeeze(np.dstack(factors)))
-            print("factors shapes",np.shape(_factors))
+            #print("factors shapes",np.shape(_factors))
             Sigma = _factors  #TODO>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
             Sigma = Sigma.T.dot(Sigma)
             D = np.diag(np.random.uniform(0, 0.9, size=len(assets)))
@@ -125,7 +125,7 @@ def Markowitz(inputs, mask ):
             sector_dist = {}
             idx = 0
             class_nos = get_sectors_no(assets)
-            print ("Markowitz class_nos:",class_nos)
+            #print ("Markowitz class_nos:",class_nos)
             for classid in class_nos:
                 if classid not in sector_dist:
                     _ = []
@@ -133,7 +133,7 @@ def Markowitz(inputs, mask ):
                     sector_dist[classid].append(idx)
                 idx += 1
             #print"sector size :", len(sector_dist)
-            for k, v in sector_dist.iteritems():
+            for k, v in sector_dist.items():
                 constraints.append(cvx.sum_entries(w[v]) <  (1 + self.max_sector_exposure) / len(sector_dist))
                 constraints.append(cvx.sum_entries(w[v]) >= (1 - self.max_sector_exposure) / len(sector_dist))
 
@@ -142,7 +142,7 @@ def Markowitz(inputs, mask ):
             if prob.status != 'optimal':
                 print ("Optimal failed %s , do nothing" % prob.status)
                 return None
-            print ("Markowit weight",np.squeeze(np.asarray(w.value)))  # Remo
+            #print ("Markowit weight",np.squeeze(np.asarray(w.value)))  # Remo
             out[:] = np.squeeze(np.asarray(w.value)) #每行中的列1
     return Markowitz(inputs = inputs,mask = mask)
 
@@ -171,17 +171,14 @@ def BasicFactorRegress(inputs, window_length, mask, n_fwd_days, algo_mode=None, 
             return np.vstack(last_values).T
 
         def compute(self, today, assets, out, returns, *inputs):
-            print ("------------------------------- BasicFactorRegress:",today)
             if (not self.init):
                 self.clf = algo_mode
                 X = np.dstack(inputs)  # (time, stocks, factors)  按时间组织了
-                print("::::1",np.shape(X))
 
                 Y = returns  # (time, stocks)
                 X, Y = self.__shift_mask_data(X, Y, n_fwd_days)  # n天的数值被展开成1维的了- 每个factor 按天展开
                 X = np.nan_to_num(X)
                 Y = np.nan_to_num(Y)
-                print("::::2",np.shape(X))
                 if cross == True:
                     quadratic_featurizer = PolynomialFeatures(interaction_only=True)
                     X = quadratic_featurizer.fit_transform(X)
@@ -201,7 +198,6 @@ class ILLIQ(CustomFactor):
     window_length = int(252)
 
     def compute(self, today, assets, out, close, volume):
-        print ("------------------------------- ILLIQ:", today)
         window_length = len(close)
         _rets = np.abs(pd.DataFrame(close, columns=assets).pct_change()[1:])
         _vols = pd.DataFrame(volume, columns=assets)[1:]
@@ -209,9 +205,9 @@ class ILLIQ(CustomFactor):
 
 
 def make_pipeline(asset_finder, algo_mode):
-    #hs300 = ts.get_hs300s()['code']
-    #private_universe = private_universe_mask(hs300.tolist(), asset_finder=asset_finder)
-    private_universe = private_universe_mask( ['000001','000002','000005'],asset_finder=asset_finder)
+    hs300 = ts.get_hs300s()['code']
+    private_universe = private_universe_mask(hs300.tolist(), asset_finder=asset_finder)
+    #private_universe = private_universe_mask( ['000001','000002','000005'],asset_finder=asset_finder)
     ######################################################################################################
     returns = Returns(inputs=[USEquityPricing.close], window_length=5, mask=private_universe).downsample('week_start') # 预测一周数据
     ######################################################################################################
@@ -309,14 +305,14 @@ def make_pipeline(asset_finder, algo_mode):
     long_short_screen = (longs | shorts)
 
 
-    #weights = Markowitz(inputs=factors_pipe.values(),mask=long_short_screen)
+    weights = Markowitz(inputs=factors_pipe.values(),mask=long_short_screen).downsample('week_start')
     # TODO sector onehot
     pipe_final_columns = {
         'Predict Factor': predict,
-        'longs': longs,
-        'shorts': shorts,
+        #'longs': longs,
+        #'shorts': shorts,
         'predict_rank': predict_rank,
-        #'weights': weights.downsample('week_start')
+        'weights': weights,
     }
 
     pipe = Pipeline(columns=pipe_final_columns,
@@ -401,16 +397,22 @@ sim_params = create_simulation_parameters(
 #######################################################################
 def rebalance(context, data):
     # print ("rebalance:",get_datetime())
-    print context.pipeline_data
+    #print(context.pipeline_data.head(10))
     pipeline_data = context.pipeline_data
     keys = list(context.posset)
     for asset in keys:
         if data.can_trade(asset):
-            # print("flattern:",asset)
+            #print("flattern:",asset)
             order_target_percent(asset=asset, target=0.0, style=MarketOrder())
             del context.posset[asset]
 
-
+    for asset,w in pipeline_data.weights.items():
+        if data.can_trade(asset):
+           order_target_percent(asset=asset, target= w, style=MarketOrder())
+           if w >= 0:
+              context.posset[asset] = True
+           else:
+              context.posset[asset] = False
     # for asset, value in pipeline_data[pipeline_data['shorts'] == True].iterrows():
     #     if data.can_trade(asset):
     #         # print("short:", asset,- 1.0/NUM_SHORT_POSITIONS)
