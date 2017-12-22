@@ -97,7 +97,7 @@ def Markowitz(inputs, mask ):
             #print("------------------------------- Markowitz:",today)
             #print ("Markowitz factor:",today)
             gamma = cvx.Parameter(sign="positive")
-            gamma.value = 1  # gamma is a Parameter that trades off risk and return.
+            gamma.value = 1  # gamma is a Parameter that trades off riskmanager and return.
             returns = np.nan_to_num(returns.T)  # time,stock to stock,time
             # [[1 3 2] [3 2 1]] = > [[1 3] [3 2] [2 1]]
             #print ("Markowitz return ...\n",  returns)
@@ -115,7 +115,7 @@ def Markowitz(inputs, mask ):
             ########################################################
             w = cvx.Variable(len(assets))
             f = F.T * w
-            #risk = cvx.quad_form(w, Sigma)
+            #riskmanager = cvx.quad_form(w, Sigma)
             risk = cvx.quad_form(f, Sigma) + cvx.quad_form(w, D)
             mu = np.array([self.target_ret] * len(assets))
             expected_return = np.reshape(mu,(-1, 1)).T * w  # w is a vector of stock holdings as fractions of total assets.

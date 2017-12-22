@@ -44,7 +44,7 @@ def Markowitz(inputs, window_length, mask, trigger_date=None):
             #    stock = sid(stock).symbol
             #    print stock
             gamma = cvx.Parameter(sign="positive")
-            gamma.value = 1  # gamma is a Parameter that trades off risk and return.
+            gamma.value = 1  # gamma is a Parameter that trades off riskmanager and return.
             returns = np.nan_to_num(returns.T)  # time,stock to stock,time
             # [[1 3 2] [3 2 1]] = > [[1 3] [3 2] [2 1]]
             print ("Markowitz return ...\n",  returns)
