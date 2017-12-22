@@ -92,7 +92,7 @@ def Markowitz(inputs, mask ):
         target_ret = 0.01  # TODO
         max_sector_exposure = 0.1
         def compute(self, today, assets,out,returns,*factors):
-            #print "------------------------------- Markowitz:",today
+            print("------------------------------- Markowitz:",today)
             print ("Markowitz factor:",today)
             gamma = cvx.Parameter(sign="positive")
             gamma.value = 1  # gamma is a Parameter that trades off risk and return.
@@ -201,6 +201,7 @@ class ILLIQ(CustomFactor):
     window_length = int(252)
 
     def compute(self, today, assets, out, close, volume):
+        print ("------------------------------- ILLIQ:", today)
         window_length = len(close)
         _rets = np.abs(pd.DataFrame(close, columns=assets).pct_change()[1:])
         _vols = pd.DataFrame(volume, columns=assets)[1:]
@@ -212,69 +213,69 @@ def make_pipeline(asset_finder, algo_mode):
     #private_universe = private_universe_mask(hs300.tolist(), asset_finder=asset_finder)
     private_universe = private_universe_mask( ['000001','000002','000005'],asset_finder=asset_finder)
     ######################################################################################################
-    returns = Returns(inputs=[USEquityPricing.close], window_length=5, mask=private_universe)  # 预测一周数据
+    returns = Returns(inputs=[USEquityPricing.close], window_length=5, mask=private_universe).downsample('week_start') # 预测一周数据
     ######################################################################################################
-    pe = Fundamental(mask=private_universe, asset_finder=asset_finder).pe
-    pb = Fundamental(mask=private_universe, asset_finder=asset_finder).pb
-    bvps = Fundamental(mask=private_universe, asset_finder=asset_finder).bvps
-    market = Fundamental(mask=private_universe, asset_finder=asset_finder).outstanding
-    totals = Fundamental(mask=private_universe, asset_finder=asset_finder).totals
-    totalAssets = Fundamental(mask=private_universe, asset_finder=asset_finder).totalAssets
-    fixedAssets = Fundamental(mask=private_universe, asset_finder=asset_finder).fixedAssets
-    esp = Fundamental(mask=private_universe, asset_finder=asset_finder).esp
-    rev = Fundamental(mask=private_universe, asset_finder=asset_finder).rev
-    profit = Fundamental(mask=private_universe, asset_finder=asset_finder).profit
-    gpr = Fundamental(mask=private_universe, asset_finder=asset_finder).gpr
-    npr = Fundamental(mask=private_universe, asset_finder=asset_finder).npr
+    pe = Fundamental(mask=private_universe, asset_finder=asset_finder).pe.downsample('month_start')
+    pb = Fundamental(mask=private_universe, asset_finder=asset_finder).pb.downsample('month_start')
+    bvps = Fundamental(mask=private_universe, asset_finder=asset_finder).bvps.downsample('month_start')
+    market = Fundamental(mask=private_universe, asset_finder=asset_finder).outstanding.downsample('month_start')
+    totals = Fundamental(mask=private_universe, asset_finder=asset_finder).totals.downsample('month_start')
+    totalAssets = Fundamental(mask=private_universe, asset_finder=asset_finder).totalAssets.downsample('month_start')
+    fixedAssets = Fundamental(mask=private_universe, asset_finder=asset_finder).fixedAssets.downsample('month_start')
+    esp = Fundamental(mask=private_universe, asset_finder=asset_finder).esp.downsample('month_start')
+    rev = Fundamental(mask=private_universe, asset_finder=asset_finder).rev.downsample('month_start')
+    profit = Fundamental(mask=private_universe, asset_finder=asset_finder).profit.downsample('month_start')
+    gpr = Fundamental(mask=private_universe, asset_finder=asset_finder).gpr.downsample('month_start')
+    npr = Fundamental(mask=private_universe, asset_finder=asset_finder).npr.downsample('month_start')
 
-    rev10 = Returns(inputs=[USEquityPricing.close], window_length=10, mask=private_universe)
-    vol10 = AverageDollarVolume(window_length=20, mask=private_universe)
-    rev20 = Returns(inputs=[USEquityPricing.close], window_length=20, mask=private_universe)
-    vol20 = AverageDollarVolume(window_length=20, mask=private_universe)
-    rev30 = Returns(inputs=[USEquityPricing.close], window_length=30, mask=private_universe)
-    vol30 = AverageDollarVolume(window_length=20, mask=private_universe)
+    rev10 = Returns(inputs=[USEquityPricing.close], window_length=10, mask=private_universe).downsample('week_start')
+    vol10 = AverageDollarVolume(window_length=20, mask=private_universe).downsample('week_start')
+    rev20 = Returns(inputs=[USEquityPricing.close], window_length=20, mask=private_universe).downsample('week_start')
+    vol20 = AverageDollarVolume(window_length=20, mask=private_universe).downsample('week_start')
+    rev30 = Returns(inputs=[USEquityPricing.close], window_length=30, mask=private_universe).downsample('week_start')
+    vol30 = AverageDollarVolume(window_length=20, mask=private_universe).downsample('week_start')
 
-    illiq22 = ILLIQ(window_length=22, mask=private_universe)
-    illiq5 = ILLIQ(window_length=5, mask=private_universe)
+    illiq22 = ILLIQ(window_length=22, mask=private_universe).downsample('week_start')
+    illiq5 = ILLIQ(window_length=5, mask=private_universe).downsample('week_start')
 
-    rsi5 = RSI(window_length=5, mask=private_universe)
-    rsi22 = RSI(window_length=22, mask=private_universe)
+    rsi5 = RSI(window_length=5, mask=private_universe).downsample('week_start')
+    rsi22 = RSI(window_length=22, mask=private_universe).downsample('week_start')
 
-    mom5 = Momentum(window_length=5, mask=private_universe)
-    mom22 = Momentum(window_length=22, mask=private_universe)
+    mom5 = Momentum(window_length=5, mask=private_universe).downsample('week_start')
+    mom22 = Momentum(window_length=22, mask=private_universe).downsample('week_start')
 
-    sector = get_sector(asset_finder=asset_finder, mask=private_universe)
+    sector = get_sector(asset_finder=asset_finder, mask=private_universe).downsample('week_start')
     ONEHOTCLASS, sector_indict_keys = get_sector_by_onehot(asset_finder=asset_finder, mask=private_universe)
 
     pipe_columns = {
 
-        'pe': pe.zscore(groupby=sector).downsample('month_start'),
-        'pb': pb.zscore(groupby=sector).downsample('month_start'),
-        'bvps': bvps.zscore(groupby=sector).downsample('month_start'),
-        'market_cap': market.zscore(groupby=sector).downsample('month_start'),
-        'totals': totals.zscore(groupby=sector).downsample('month_start'),
-        'totalAssets': totalAssets.zscore(groupby=sector).downsample('month_start'),
-        'fixedAssets': fixedAssets.zscore(groupby=sector).downsample('month_start'),
-        'esp': esp.zscore(groupby=sector).downsample('month_start'),
-        'rev': rev.zscore(groupby=sector).downsample('month_start'),
-        'profit': profit.zscore(groupby=sector).downsample('month_start'),
-        'gpr': gpr.zscore(groupby=sector).downsample('month_start'),
-        'npr': npr.zscore(groupby=sector).downsample('month_start'),
-        'vol10': vol10.zscore(groupby=sector).downsample('week_start'),
-        'rev10': rev10.zscore(groupby=sector).downsample('week_start'),
-        'vol20': vol20.zscore(groupby=sector).downsample('week_start'),
-        'rev20': rev20.zscore(groupby=sector).downsample('week_start'),
-        'vol30': vol30.zscore(groupby=sector).downsample('week_start'),
-        'rev30': rev30.zscore(groupby=sector).downsample('week_start'),
+        'pe': pe.zscore(groupby=sector),
+        'pb': pb.zscore(groupby=sector),
+        'bvps': bvps.zscore(groupby=sector),
+        'market_cap': market.zscore(groupby=sector),
+        'totals': totals.zscore(groupby=sector),
+        'totalAssets': totalAssets.zscore(groupby=sector),
+        'fixedAssets': fixedAssets.zscore(groupby=sector),
+        'esp': esp.zscore(groupby=sector),
+        'rev': rev.zscore(groupby=sector),
+        'profit': profit.zscore(groupby=sector),
+        'gpr': gpr.zscore(groupby=sector),
+        'npr': npr.zscore(groupby=sector),
+        'vol10': vol10.zscore(groupby=sector),
+        'rev10': rev10.zscore(groupby=sector),
+        'vol20': vol20.zscore(groupby=sector),
+        'rev20': rev20.zscore(groupby=sector),
+        'vol30': vol30.zscore(groupby=sector),
+        'rev30': rev30.zscore(groupby=sector),
 
-        'ILLIQ5': illiq5.zscore(groupby=sector).downsample('week_start'),
-        'ILLIQ22': illiq22.zscore(groupby=sector).downsample('week_start'),
+        'ILLIQ5': illiq5.zscore(groupby=sector),
+        'ILLIQ22': illiq22.zscore(groupby=sector),
 
-        'mom5': mom5.zscore(groupby=sector).downsample('week_start'),
-        'mom22': mom22.zscore(groupby=sector).downsample('week_start'),
+        'mom5': mom5.zscore(groupby=sector),
+        'mom22': mom22.zscore(groupby=sector),
 
-        'rsi5': rsi5.zscore(groupby=sector).downsample('week_start'),
-        'rsi22': rsi22.zscore(groupby=sector).downsample('week_start'),
+        'rsi5': rsi5.zscore(groupby=sector),
+        'rsi22': rsi22.zscore(groupby=sector),
 
     }
 
@@ -292,6 +293,7 @@ def make_pipeline(asset_finder, algo_mode):
     i = 0
     for c in ONEHOTCLASS:
         c.window_safe = True
+        c.downsample('week_start')
         factors_pipe[sector_indict_keys[i]] = c
         # print (c,sector_indict_keys[i])
         i += 1
@@ -299,22 +301,24 @@ def make_pipeline(asset_finder, algo_mode):
     predict = BasicFactorRegress(inputs=factors_pipe.values(), window_length=252, mask=private_universe,
                                  n_fwd_days=5,
                                  algo_mode=algo_mode,
-                                 cross=False)
-    predict_rank = predict.rank(mask=private_universe)
+                                 cross=False).downsample('week_start')
+    predict_rank = predict.rank(mask=private_universe).downsample('week_start')
 
-    longs = predict_rank.top(NUM_LONG_POSITIONS)
-    shorts = predict_rank.bottom(NUM_SHORT_POSITIONS)
+    longs = predict_rank.top(NUM_LONG_POSITIONS).downsample('week_start')
+    shorts = predict_rank.bottom(NUM_SHORT_POSITIONS).downsample('week_start')
     long_short_screen = (longs | shorts)
+
 
     #weights = Markowitz(inputs=factors_pipe.values(),mask=long_short_screen)
     # TODO sector onehot
     pipe_final_columns = {
-        'Predict Factor': predict.downsample('week_start'),
-        'longs': longs.downsample('week_start'),
-        'shorts': shorts.downsample('week_start'),
-        'predict_rank': predict_rank.downsample('week_start'),
+        'Predict Factor': predict,
+        'longs': longs,
+        'shorts': shorts,
+        'predict_rank': predict_rank,
         #'weights': weights.downsample('week_start')
     }
+
     pipe = Pipeline(columns=pipe_final_columns,
                     screen=long_short_screen, )
     return pipe
