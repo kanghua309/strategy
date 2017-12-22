@@ -69,6 +69,8 @@ from sklearn.ensemble import RandomForestRegressor
 from sklearn.ensemble import AdaBoostRegressor
 from sklearn.ensemble import GradientBoostingRegressor
 from sklearn.preprocessing import PolynomialFeatures
+from sklearn import covariance
+
 import cvxpy as cvx
 
 NUM_LONG_POSITIONS = 20
@@ -105,7 +107,8 @@ def Markowitz(inputs, mask ):
             _factors = np.nan_to_num(np.squeeze(np.dstack(factors)))
             #print("factors shapes",np.shape(_factors))
             Sigma = _factors  #TODO>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-            Sigma = Sigma.T.dot(Sigma)
+            # Sigma = Sigma.T.dot(Sigma)
+            Sigma = covariance.ledoit_wolf(Sigma)  # 修正算法
             D = np.diag(np.random.uniform(0, 0.9, size=len(assets)))
             F = _factors
 
