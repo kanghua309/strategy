@@ -101,22 +101,13 @@ def Markowitz(inputs, mask ):
             returns = np.nan_to_num(returns.T)  # time,stock to stock,time
             # [[1 3 2] [3 2 1]] = > [[1 3] [3 2] [2 1]]
             #print ("Markowitz return ...\n",  returns)
-            # cov_mat = np.cov(returns)
-            # Sigma = cov_mat
-
-            _factors = np.nan_to_num(np.squeeze(np.dstack(factors)))
-            #print("factors shapes",np.shape(_factors))
-            Sigma = _factors  #TODO>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-            # Sigma = Sigma.T.dot(Sigma)
-            Sigma = covariance.ledoit_wolf(Sigma)[0]  # 修正算法
-            D = np.diag(np.random.uniform(0, 0.9, size=len(assets)))
-            F = _factors
+            cov_mat = np.cov(returns)
+            Sigma = cov_mat
 
             ########################################################
             w = cvx.Variable(len(assets))
             f = F.T * w
-            #riskmanager = cvx.quad_form(w, Sigma)
-            risk = cvx.quad_form(f, Sigma) + cvx.quad_form(w, D)
+            risk = cvx.quad_form(w, Sigma)
             mu = np.array([self.target_ret] * len(assets))
             expected_return = np.reshape(mu,(-1, 1)).T * w  # w is a vector of stock holdings as fractions of total assets.
             objective = cvx.Maximize(expected_return - gamma * risk)  # Maximize(expected_return - expected_variance)
