@@ -87,26 +87,26 @@ ONEHOTCLASS = tuple(c)
 
 
 
-def Markowitz(inputs, mask ):
+def Markowitz(inputs, window_length,mask ):
     class Markowitz(CustomFactor):
         #params = {'trigger_date': None, }
-        window_length = int(1)
-        target_ret = 0.01  # TODO
+        window_length = int(5)
+        target_ret = 0.1  # TODO
         max_sector_exposure = 0.1
-        def compute(self, today, assets,out,returns,*factors):
-            #print("------------------------------- Markowitz:",today)
-            #print ("Markowitz factor:",today)
+        def compute(self, today, assets,out,returns):
+            print("------------------------------- Markowitz:",today)
+            #print ("Markowitz factor:",returns)
             gamma = cvx.Parameter(sign="positive")
             gamma.value = 1  # gamma is a Parameter that trades off riskmanager and return.
-            returns = np.nan_to_num(returns.T)  # time,stock to stock,time
-            # [[1 3 2] [3 2 1]] = > [[1 3] [3 2] [2 1]]
-            #print ("Markowitz return ...\n",  returns)
-            cov_mat = np.cov(returns)
-            Sigma = cov_mat
-
+            #returns = np.nan_to_num(returns.T)  # time,stock to stock,time
+            #print ("Markowitz factor2:",returns)
+            #cov_mat = np.cov(returns)
+            #Sigma = cov_mat
+            Sigma = np.nan_to_num(returns)
+            Sigma = Sigma.T.dot(Sigma)
+            #print ("Markowitz factor2:",Sigma)
             ########################################################
             w = cvx.Variable(len(assets))
-            f = F.T * w
             risk = cvx.quad_form(w, Sigma)
             mu = np.array([self.target_ret] * len(assets))
             expected_return = np.reshape(mu,(-1, 1)).T * w  # w is a vector of stock holdings as fractions of total assets.
@@ -124,12 +124,12 @@ def Markowitz(inputs, mask ):
                 if classid not in sector_dist:
                     _ = []
                     sector_dist[classid] = _
-                    sector_dist[classid].append(idx)
+                sector_dist[classid].append(idx)
                 idx += 1
-            #print"sector size :", len(sector_dist)
+            #print("sector size :", len(sector_dist),idx,sector_dist)
             for k, v in sector_dist.items():
-                constraints.append(cvx.sum_entries(w[v]) <  (1 + self.max_sector_exposure) / len(sector_dist))
-                constraints.append(cvx.sum_entries(w[v]) >= (1 - self.max_sector_exposure) / len(sector_dist))
+                constraints.append(cvx.sum_entries(w[v]) <  (1 / len(sector_dist) + self.max_sector_exposure))
+                constraints.append(cvx.sum_entries(w[v]) >= (1 / len(sector_dist) - self.max_sector_exposure))
 
             prob = cvx.Problem(objective, constraints)
             prob.solve()
@@ -138,7 +138,7 @@ def Markowitz(inputs, mask ):
                 return None
             #print ("Markowit weight",np.squeeze(np.asarray(w.value)))  # Remo
             out[:] = np.squeeze(np.asarray(w.value)) #每行中的列1
-    return Markowitz(inputs = inputs,mask = mask)
+    return Markowitz(inputs = inputs , window_length=window_length , mask = mask)
 
 
 def BasicFactorRegress(inputs, window_length, mask, n_fwd_days, algo_mode=None, cross=True):
@@ -203,7 +203,7 @@ def make_pipeline(asset_finder, algo_mode):
     private_universe = private_universe_mask(hs300.tolist(), asset_finder=asset_finder)
     #private_universe = private_universe_mask( ['000001','000002','000005'],asset_finder=asset_finder)
     ######################################################################################################
-    returns = Returns(inputs=[USEquityPricing.close], window_length=5, mask=private_universe).downsample('week_start') # 预测一周数据
+    returns = Returns(inputs=[USEquityPricing.close], window_length=5, mask=private_universe) # 预测一周数据
     ######################################################################################################
     pe = Fundamental(mask=private_universe, asset_finder=asset_finder).pe.downsample('month_start')
     pb = Fundamental(mask=private_universe, asset_finder=asset_finder).pb.downsample('month_start')
@@ -218,21 +218,21 @@ def make_pipeline(asset_finder, algo_mode):
     gpr = Fundamental(mask=private_universe, asset_finder=asset_finder).gpr.downsample('month_start')
     npr = Fundamental(mask=private_universe, asset_finder=asset_finder).npr.downsample('month_start')
 
-    rev10 = Returns(inputs=[USEquityPricing.close], window_length=10, mask=private_universe).downsample('week_start')
-    vol10 = AverageDollarVolume(window_length=20, mask=private_universe).downsample('week_start')
-    rev20 = Returns(inputs=[USEquityPricing.close], window_length=20, mask=private_universe).downsample('week_start')
-    vol20 = AverageDollarVolume(window_length=20, mask=private_universe).downsample('week_start')
-    rev30 = Returns(inputs=[USEquityPricing.close], window_length=30, mask=private_universe).downsample('week_start')
-    vol30 = AverageDollarVolume(window_length=20, mask=private_universe).downsample('week_start')
+    rev10 = Returns(inputs=[USEquityPricing.close], window_length=10, mask=private_universe)
+    vol10 = AverageDollarVolume(window_length=20, mask=private_universe)
+    rev20 = Returns(inputs=[USEquityPricing.close], window_length=20, mask=private_universe)
+    vol20 = AverageDollarVolume(window_length=20, mask=private_universe)
+    rev30 = Returns(inputs=[USEquityPricing.close], window_length=30, mask=private_universe)
+    vol30 = AverageDollarVolume(window_length=20, mask=private_universe)
 
-    illiq22 = ILLIQ(window_length=22, mask=private_universe).downsample('week_start')
-    illiq5 = ILLIQ(window_length=5, mask=private_universe).downsample('week_start')
+    illiq22 = ILLIQ(window_length=22, mask=private_universe)
+    illiq5 = ILLIQ(window_length=5, mask=private_universe)
 
-    rsi5 = RSI(window_length=5, mask=private_universe).downsample('week_start')
-    rsi22 = RSI(window_length=22, mask=private_universe).downsample('week_start')
+    rsi5 = RSI(window_length=5, mask=private_universe)
+    rsi22 = RSI(window_length=22, mask=private_universe)
 
-    mom5 = Momentum(window_length=5, mask=private_universe).downsample('week_start')
-    mom22 = Momentum(window_length=22, mask=private_universe).downsample('week_start')
+    mom5 = Momentum(window_length=5, mask=private_universe)
+    mom22 = Momentum(window_length=22, mask=private_universe)
 
     sector = get_sector(asset_finder=asset_finder, mask=private_universe).downsample('week_start')
     ONEHOTCLASS, sector_indict_keys = get_sector_by_onehot(asset_finder=asset_finder, mask=private_universe)
@@ -299,13 +299,9 @@ def make_pipeline(asset_finder, algo_mode):
     long_short_screen = (longs | shorts)
 
 
-    weights = Markowitz(inputs=factors_pipe.values(),mask=long_short_screen).downsample('week_start')
+    weights = Markowitz(inputs=[returns],window_length=21,mask=long_short_screen).downsample('week_start')
     # TODO sector onehot
     pipe_final_columns = {
-        'Predict Factor': predict,
-        #'longs': longs,
-        #'shorts': shorts,
-        'predict_rank': predict_rank,
         'weights': weights,
     }
 
